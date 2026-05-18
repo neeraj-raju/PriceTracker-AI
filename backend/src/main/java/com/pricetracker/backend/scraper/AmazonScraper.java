@@ -77,6 +77,7 @@ public class AmazonScraper implements ScraperStrategy {
 
             data.put("error", "Failed to scrape product");
         }
+        System.out.println(data);
 
         return data;
     }
