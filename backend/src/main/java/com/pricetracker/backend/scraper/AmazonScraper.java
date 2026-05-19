@@ -33,51 +33,78 @@ public class AmazonScraper implements ScraperStrategy {
 
         try {
 
-            log.info("Scraping Amazon URL: {}", url);
+            System.out.println("Scraping URL: " + url);
 
             Document doc = Jsoup.connect(url)
                     .userAgent(userAgent)
                     .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .header("Connection", "keep-alive")
                     .timeout(timeout)
                     .get();
 
+            // PRODUCT NAME
             Element titleEl = doc.selectFirst("#productTitle");
-            data.put("name",
+
+            String productName =
                     titleEl != null
                             ? titleEl.text().trim()
-                            : "Unknown Product");
+                            : "Unknown Product";
 
-            data.put("price", extractPrice(doc));
+            data.put("name", productName);
 
+            // PRODUCT PRICE
+            String price = extractPrice(doc);
+
+            data.put("price", price);
+
+            // PRODUCT IMAGE
             Element imgEl = doc.selectFirst("#landingImage");
-            data.put("imageUrl",
+
+            data.put(
+                    "imageUrl",
                     imgEl != null
                             ? imgEl.attr("src")
-                            : "");
+                            : ""
+            );
 
+            // RATING
             Element ratingEl = doc.selectFirst("span.a-icon-alt");
-            data.put("rating",
-                    ratingEl != null
-                            ? ratingEl.text().split(" ")[0]
-                            : "N/A");
 
-            Element availEl = doc.selectFirst("#availability span");
-            data.put("availability",
+            data.put(
+                    "rating",
+                    ratingEl != null
+                            ? ratingEl.text()
+                            : "N/A"
+            );
+
+            // AVAILABILITY
+            Element availEl =
+                    doc.selectFirst("#availability span");
+
+            data.put(
+                    "availability",
                     availEl != null
                             ? availEl.text().trim()
-                            : "Unknown");
+                            : "Unknown"
+            );
 
+            // WEBSITE
             data.put("website", "AMAZON");
 
-            log.info("Scraped product: {}", data.get("name"));
+            System.out.println("SCRAPED DATA: " + data);
 
         } catch (Exception e) {
 
-            log.error("Error scraping Amazon product", e);
+            e.printStackTrace();
 
-            data.put("error", "Failed to scrape product");
+            data.put("name", "Unknown Product");
+            data.put("price", "0");
+            data.put("website", "AMAZON");
+            data.put("imageUrl", "");
+            data.put("rating", "N/A");
+            data.put("availability", "Unknown");
         }
-        System.out.println(data);
 
         return data;
     }
