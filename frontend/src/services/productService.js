@@ -4,7 +4,8 @@ export const trackProduct = async (url) => {
 
 try {
 
-const response = await api.post(
+const response =
+await api.post(
 "/products/track",
 {
 url
@@ -27,7 +28,9 @@ export const getProducts = async () => {
 try{
 
 const response =
-await api.get("/products");
+await api.get(
+"/products"
+);
 
 return response.data;
 
@@ -39,7 +42,8 @@ throw error;
 }
 
 };
-export const removeProduct = async (id) => {
+
+export const removeProduct = async(id)=>{
 
 try{
 
@@ -55,7 +59,9 @@ throw error;
 }
 
 };
-export const getPriceHistory = async(id)=>{
+
+export const getPriceHistory =
+async(id)=>{
 
 try{
 
@@ -63,6 +69,28 @@ const response=
 
 await api.get(
 `/products/${id}/history`
+);
+
+return response.data;
+
+}
+catch(error){
+
+throw error;
+
+}
+
+};
+
+export const getStats =
+async()=>{
+
+try{
+
+const response=
+
+await api.get(
+"/products/stats"
 );
 
 return response.data;

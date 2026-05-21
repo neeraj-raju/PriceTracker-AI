@@ -7,6 +7,9 @@ import com.pricetracker.backend.model.Product;
 import com.pricetracker.backend.repository.PriceHistoryRepository;
 import com.pricetracker.backend.repository.ProductRepository;
 import com.pricetracker.backend.scraper.ScraperFactory;
+import com.pricetracker.backend.model.User;
+import com.pricetracker.backend.model.UserTracking;
+import com.pricetracker.backend.repository.UserTrackingRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +19,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -27,16 +31,34 @@ public class ProductService {
             priceHistoryRepository;
 
     private final ScraperFactory scraperFactory;
+    private final UserTrackingRepository
+            userTrackingRepository;
 
     public Product trackProduct(
-            TrackProductRequest request
+            TrackProductRequest request,
+            User user
     ) {
-        if(productRepository.existsByUrl(
-                request.getUrl()
-        )) {
+        Optional<Product>
+                alreadyTracked=
+
+                productRepository
+                        .findTrackedProduct(
+
+                                user.getId(),
+
+                                request.getUrl()
+
+                        );
+
+        if(
+                alreadyTracked
+                        .isPresent()
+        ){
 
             throw new RuntimeException(
+
                     "Already tracking this product"
+
             );
 
         }
@@ -134,8 +156,18 @@ public class ProductService {
 
         Product savedProduct =
 
-                productRepository
-                        .save(product);
+                productRepository.save(product);
+        UserTracking tracking =
+                new UserTracking();
+
+        tracking.setUser(user);
+
+        tracking.setProduct(
+                savedProduct
+        );
+
+        userTrackingRepository
+                .save(tracking);
 
         PriceHistory history =
                 new PriceHistory();
@@ -191,5 +223,54 @@ public class ProductService {
                         );
 
     }
+    public Map<String,Long>
+    getDashboardStats(){
 
+        Map<String,Long>
+                stats=
+                new HashMap<>();
+
+        stats.put(
+
+                "trackedProducts",
+
+                (long)
+                        productRepository.count()
+
+        );
+
+        stats.put(
+
+                "priceDrops",
+
+                priceHistoryRepository
+                        .getPriceDropCount()
+
+        );
+
+        stats.put(
+
+                "alertsSent",
+
+                priceHistoryRepository
+                        .getPriceDropCount()
+
+        );
+
+        return stats;
+
+    }
+
+    public List<Product>
+    getUserProducts(
+            Long userId
+    ){
+
+        return
+                productRepository
+                        .findAllByUserId(
+                                userId
+                        );
+
+    }
 }

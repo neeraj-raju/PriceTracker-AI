@@ -22,4 +22,12 @@ public interface PriceHistoryRepository extends JpaRepository<PriceHistory, Long
     Optional<BigDecimal> findHighestPriceByProductId(Long productId);
 
     long countByProductIdAndPriceDroppedTrue(Long productId);
+    long countByPriceDroppedTrue();
+    @Query("""
+SELECT COUNT(ph)
+FROM PriceHistory ph
+WHERE ph.priceDropped=true
+""")
+    long getPriceDropCount();
+
 }

@@ -29,7 +29,8 @@ import {
 trackProduct,
 getProducts,
 removeProduct,
-getPriceHistory
+getPriceHistory,
+getStats
 }
 from "../services/productService";
 
@@ -38,6 +39,16 @@ export default function Dashboard() {
 const [url,setUrl]=useState("");
 
 const [products,setProducts]=useState([]);
+const [stats,
+setStats]=useState({
+
+trackedProducts:0,
+
+priceDrops:0,
+
+alertsSent:0
+
+});
 const [search,
 setSearch]=useState("");
 const [priceHistory,
@@ -75,8 +86,32 @@ useEffect(()=>{
 
 loadProducts();
 
-},[]);
+loadStats();
 
+},[]);
+const loadStats=
+async()=>{
+
+try{
+
+const data=
+
+await getStats();
+
+setStats(
+data
+);
+
+}
+catch(error){
+
+console.log(
+error
+);
+
+}
+
+};
 const filteredProducts =
 
 products.filter(
@@ -429,20 +464,24 @@ mb-6
 icon={<Box/>}
 title="Tracked Products"
 value={
-products.length
+stats.trackedProducts
 }
 />
 
 <Card
 icon={<TrendingDown/>}
 title="Price Drops"
-value="12"
+value={
+stats.priceDrops
+}
 />
 
 <Card
 icon={<Bell/>}
 title="Alerts Sent"
-value="31"
+value={
+stats.alertsSent
+}
 />
 
 </div>
