@@ -22,8 +22,10 @@ public class AmazonScraper implements ScraperStrategy {
 
     @Override
     public boolean supports(String url) {
+
         return url != null &&
-                (url.contains("amazon.in") || url.contains("amazon.com"));
+                (url.contains("amazon.in")
+                        || url.contains("amazon.com"));
     }
 
     @Override
@@ -38,13 +40,11 @@ public class AmazonScraper implements ScraperStrategy {
             Document doc = Jsoup.connect(url)
                     .userAgent(userAgent)
                     .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Accept-Encoding", "gzip, deflate")
-                    .header("Connection", "keep-alive")
                     .timeout(timeout)
                     .get();
 
-            // PRODUCT NAME
-            Element titleEl = doc.selectFirst("#productTitle");
+            Element titleEl =
+                    doc.selectFirst("#productTitle");
 
             String productName =
                     titleEl != null
@@ -53,13 +53,13 @@ public class AmazonScraper implements ScraperStrategy {
 
             data.put("name", productName);
 
-            // PRODUCT PRICE
-            String price = extractPrice(doc);
+            String price =
+                    extractPrice(doc);
 
             data.put("price", price);
 
-            // PRODUCT IMAGE
-            Element imgEl = doc.selectFirst("#landingImage");
+            Element imgEl =
+                    doc.selectFirst("#landingImage");
 
             data.put(
                     "imageUrl",
@@ -68,8 +68,8 @@ public class AmazonScraper implements ScraperStrategy {
                             : ""
             );
 
-            // RATING
-            Element ratingEl = doc.selectFirst("span.a-icon-alt");
+            Element ratingEl =
+                    doc.selectFirst("span.a-icon-alt");
 
             data.put(
                     "rating",
@@ -78,7 +78,6 @@ public class AmazonScraper implements ScraperStrategy {
                             : "N/A"
             );
 
-            // AVAILABILITY
             Element availEl =
                     doc.selectFirst("#availability span");
 
@@ -89,12 +88,14 @@ public class AmazonScraper implements ScraperStrategy {
                             : "Unknown"
             );
 
-            // WEBSITE
             data.put("website", "AMAZON");
 
-            System.out.println("SCRAPED DATA: " + data);
+            System.out.println(
+                    "SCRAPED DATA: " + data
+            );
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
 
             e.printStackTrace();
 
@@ -111,34 +112,111 @@ public class AmazonScraper implements ScraperStrategy {
 
     private String extractPrice(Document doc) {
 
-        Element el = doc.selectFirst(".a-price .a-offscreen");
+        Element wholeEl =
+                doc.selectFirst(".a-price-whole");
 
-        if (el != null) {
-            return clean(el.text());
+        if (wholeEl != null) {
+
+            String whole =
+                    wholeEl.text()
+                            .replace(",", "")
+                            .replace(".", "")
+                            .trim();
+
+            Element fractionEl =
+                    doc.selectFirst(".a-price-fraction");
+
+            String fraction =
+                    fractionEl != null
+                            ? fractionEl.text()
+                            : "00";
+
+            return clean(
+                    whole + "." + fraction
+            );
         }
 
-        el = doc.selectFirst("#priceblock_ourprice");
+        Element offscreen =
+                doc.selectFirst(".a-price .a-offscreen");
 
-        if (el != null) {
-            return clean(el.text());
+        if (offscreen != null) {
+
+            return clean(
+                    offscreen.text()
+            );
         }
 
-        el = doc.selectFirst("#priceblock_dealprice");
+        Element price1 =
+                doc.selectFirst("#priceblock_ourprice");
 
-        if (el != null) {
-            return clean(el.text());
+        if (price1 != null) {
+
+            return clean(
+                    price1.text()
+            );
         }
 
-        el = doc.selectFirst("span.a-price-whole");
+        Element price2 =
+                doc.selectFirst("#priceblock_dealprice");
 
-        if (el != null) {
-            return clean(el.text());
+        if (price2 != null) {
+
+            return clean(
+                    price2.text()
+            );
         }
 
         return "0";
     }
 
     private String clean(String price) {
-        return price.replaceAll("[^0-9.]", "");
+
+        if (price == null) {
+
+            return "0";
+        }
+
+        price = price
+                .replace("₹", "")
+                .replace(",", "")
+                .trim();
+
+        price =
+                price.replaceAll(
+                        "[^0-9.]",
+                        ""
+                );
+
+        int dotCount =
+                price.length()
+                        -
+                        price.replace(".", "")
+                                .length();
+
+        if (dotCount > 1) {
+
+            int firstDot =
+                    price.indexOf(".");
+
+            String left =
+                    price.substring(
+                            0,
+                            firstDot + 1
+                    );
+
+            String right =
+                    price.substring(
+                            firstDot + 1
+                    ).replace(".", "");
+
+            price = left + right;
+        }
+
+        if (price.isEmpty()) {
+
+            return "0";
+        }
+
+        return price;
     }
 }
