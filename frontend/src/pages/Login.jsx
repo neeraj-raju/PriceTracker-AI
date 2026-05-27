@@ -82,6 +82,7 @@ function Login() {
 
         <motion.form
           onSubmit={handleLogin}
+          autoComplete="off"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
@@ -109,14 +110,15 @@ function Login() {
 
                 <Mail className="text-zinc-400" size={20} />
 
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  onChange={handleChange}
-                  className="w-full bg-transparent outline-none px-4 py-4 text-white"
-                />
-
+               <input
+               type="email"
+               name="email"
+               placeholder="Enter your email"
+               onChange={handleChange}
+               autoComplete="off"
+               value={formData.email}
+               className="w-full bg-transparent outline-none px-4 py-4 text-white"
+               />
               </div>
             </div>
 
@@ -132,11 +134,13 @@ function Login() {
                 <Lock className="text-zinc-400" size={20} />
 
                 <input
-                  type="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  onChange={handleChange}
-                  className="w-full bg-transparent outline-none px-4 py-4 text-white"
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                onChange={handleChange}
+                autoComplete="new-password"
+                value={formData.password}
+                className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />
 
               </div>

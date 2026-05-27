@@ -1,4 +1,6 @@
+import { useNavigate } from "react-router-dom"
 export default function HeroSection() {
+    const navigate = useNavigate()
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden px-6">
 
@@ -54,34 +56,48 @@ export default function HeroSection() {
         <div className="flex justify-center gap-6 mt-12">
 
           <button
-            className="
-            px-10
-            py-4
-            rounded-2xl
-            bg-emerald-500
-            hover:bg-emerald-400
-            font-bold
-            text-black
-            shadow-lg
-            shadow-emerald-500/30
-            transition
-            "
+
+          onClick={()=>
+          navigate("/dashboard")
+          }
+
+          className="
+          px-10
+          py-4
+          rounded-2xl
+          bg-emerald-500
+          hover:bg-emerald-400
+          font-bold
+          text-black
+          shadow-lg
+          shadow-emerald-500/30
+          transition
+          "
           >
-            Start Tracking
+
+          Start Tracking
+
           </button>
 
           <button
-            className="
-            px-10
-            py-4
-            rounded-2xl
-            border
-            border-gray-700
-            hover:border-cyan-400
-            transition
-            "
+
+          onClick={()=>
+          navigate("/dashboard")
+          }
+
+          className="
+          px-10
+          py-4
+          rounded-2xl
+          border
+          border-gray-700
+          hover:border-cyan-400
+          transition
+          "
           >
-            Live Demo
+
+          Live Demo
+
           </button>
 
         </div>

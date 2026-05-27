@@ -84,6 +84,7 @@ function Register() {
 
         <motion.form
           onSubmit={handleRegister}
+          autoComplete="off"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
@@ -138,6 +139,8 @@ function Register() {
                   name="email"
                   placeholder="Enter your email"
                   onChange={handleChange}
+                  value={formData.email}
+                  autoComplete="off"
                   className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />
 
@@ -160,6 +163,8 @@ function Register() {
                   name="password"
                   placeholder="Create password"
                   onChange={handleChange}
+                  value={formData.password}
+                  autoComplete="new-password"
                   className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />
 

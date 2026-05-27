@@ -47,7 +47,39 @@ function Navbar() {
             </button>
           </Link>
 
-          <BellDot className="text-emerald-400" size={22} />
+        <Link to="/dashboard">
+
+        <div
+        className="
+        relative
+        cursor-pointer
+        hover:scale-110
+        transition
+        "
+        >
+
+        <BellDot
+        className="
+        text-emerald-400
+        "
+        size={22}
+        />
+
+        <span
+        className="
+        absolute
+        -top-1
+        -right-1
+        w-2
+        h-2
+        bg-red-500
+        rounded-full
+        "
+        />
+
+        </div>
+
+        </Link>
 
         </nav>
 

@@ -26,6 +26,10 @@ useState
 } from "react";
 
 import {
+useNavigate
+} from "react-router-dom";
+
+import {
 trackProduct,
 getProducts,
 removeProduct,
@@ -35,6 +39,15 @@ getStats
 from "../services/productService";
 
 export default function Dashboard() {
+    const navigate = useNavigate()
+
+   const handleLogout = ()=>{
+
+   localStorage.removeItem("token")
+
+   navigate("/login",{replace:true})
+
+   }
 
 const [url,setUrl]=useState("");
 
@@ -58,6 +71,10 @@ const [selectedProduct,
 setSelectedProduct]=useState(
 null
 );
+const [loading,
+setLoading]=useState(false)
+const [activeSection,
+setActiveSection]=useState("dashboard")
 
 const loadProducts = async()=>{
 
@@ -84,11 +101,22 @@ error
 
 useEffect(()=>{
 
-loadProducts();
+const token =
+localStorage.getItem("token")
 
-loadStats();
+if(!token){
 
-},[]);
+navigate("/login")
+
+return
+
+}
+
+loadProducts()
+
+loadStats()
+
+},[])
 const loadStats=
 async()=>{
 
@@ -145,9 +173,12 @@ const handleTrack = async () => {
     if (!url.trim()) {
 
         alert("Enter product URL");
+
         return;
 
     }
+
+    setLoading(true);
 
     try {
 
@@ -181,6 +212,12 @@ const handleTrack = async () => {
             );
 
         }
+
+    }
+
+    finally{
+
+        setLoading(false);
 
     }
 
@@ -315,17 +352,28 @@ PriceTracker AI
 <SidebarButton
 icon={<LayoutDashboard size={22}/>}
 name="Dashboard"
-active
+active={activeSection==="dashboard"}
+onClick={()=>
+setActiveSection("dashboard")
+}
 />
 
 <SidebarButton
 icon={<Package size={22}/>}
 name="Products"
+active={activeSection==="products"}
+onClick={()=>
+setActiveSection("products")
+}
 />
 
 <SidebarButton
 icon={<Bell size={22}/>}
 name="Alerts"
+active={activeSection==="alerts"}
+onClick={()=>
+setActiveSection("alerts")
+}
 />
 
 </div>
@@ -333,6 +381,9 @@ name="Alerts"
 </div>
 
 <button
+
+onClick={handleLogout}
+
 className="
 flex
 items-center
@@ -448,6 +499,245 @@ text-gray-300
 </div>
 
 </div>
+{
+activeSection==="products" && (
+
+<div
+className="
+bg-[#060606]
+border
+border-[#171717]
+rounded-3xl
+p-6
+"
+>
+
+<h2
+className="
+text-3xl
+font-black
+mb-6
+text-emerald-400
+"
+>
+
+Products 📦
+
+</h2>
+
+<div
+className="
+space-y-4
+"
+>
+
+{
+
+products.length===0
+
+?
+
+(
+
+<p
+className="
+text-gray-400
+"
+>
+
+No products tracked yet
+
+</p>
+
+)
+
+:
+
+(
+
+filteredProducts.map(
+(product)=>(
+
+<div
+
+key={product.id}
+
+className="
+bg-black
+border
+border-[#222]
+rounded-2xl
+p-4
+flex
+justify-between
+items-center
+"
+
+>
+
+<div>
+
+<h3
+className="
+font-bold
+"
+>
+
+{product.name}
+
+</h3>
+
+<p
+className="
+text-emerald-400
+"
+>
+
+₹ {product.currentPrice}
+
+</p>
+
+</div>
+
+<button
+
+onClick={()=>
+handleRemove(product.id)
+}
+
+className="
+bg-red-500
+px-4
+py-2
+rounded-xl
+"
+
+>
+
+Remove
+
+</button>
+
+</div>
+
+)
+
+)
+
+)
+
+}
+
+</div>
+
+</div>
+
+)
+
+}
+
+{
+activeSection==="alerts" && (
+
+<div
+className="
+bg-[#060606]
+border
+border-[#171717]
+rounded-3xl
+p-6
+"
+>
+
+<h2
+className="
+text-3xl
+font-black
+mb-6
+text-cyan-400
+"
+>
+
+Alerts 🔔
+
+</h2>
+
+{
+
+stats.alertsSent===0
+
+?
+
+(
+
+<p
+className="
+text-gray-400
+"
+>
+
+No alerts yet
+
+</p>
+
+)
+
+:
+
+(
+
+<div
+className="
+space-y-3
+"
+>
+
+<div
+className="
+bg-black
+border
+border-[#222]
+rounded-2xl
+p-4
+"
+>
+
+<p>
+
+Alerts Sent:
+
+<span
+className="
+text-cyan-400
+font-bold
+ml-2
+"
+>
+
+{stats.alertsSent}
+
+</span>
+
+</p>
+
+</div>
+
+</div>
+
+)
+
+}
+
+</div>
+
+)
+
+}
+
+{
+activeSection==="dashboard" && (
+
+<>
 
 {/* Cards */}
 
@@ -540,7 +830,7 @@ transition
 />
 
 <button
-
+disabled={loading}
 onClick={handleTrack}
 
 className="
@@ -557,7 +847,13 @@ shadow-emerald-500/20
 
 >
 
-Track
+{
+loading
+?
+"Tracking..."
+:
+"Track"
+}
 
 </button>
 
@@ -937,6 +1233,7 @@ strokeWidth={3}
 )
 
 }
+
 </div>
 
 )
@@ -946,6 +1243,14 @@ strokeWidth={3}
 </div>
 
 </div>
+
+
+
+</>
+
+)
+
+}
 
 </div>
 
@@ -958,12 +1263,15 @@ strokeWidth={3}
 function SidebarButton({
 icon,
 name,
-active=false
+active=false,
+onClick
 }) {
 
 return (
 
 <button
+
+onClick={onClick}
 
 className={`
 
