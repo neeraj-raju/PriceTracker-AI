@@ -33,6 +33,14 @@ public class ProductController {
 
     ){
 
+        if(user == null){
+
+            throw new RuntimeException(
+                    "User not authenticated"
+            );
+
+        }
+
         return productService.trackProduct(
 
                 request,
@@ -50,6 +58,14 @@ public class ProductController {
             User user
 
     ){
+
+        if(user == null){
+
+            throw new RuntimeException(
+                    "User not authenticated"
+            );
+
+        }
 
         return
                 productService
