@@ -1,8 +1,22 @@
 import { motion } from "framer-motion"
 import { BellDot } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
 
 function Navbar() {
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("token"));
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    setIsLoggedIn(false);
+    navigate("/login", { replace: true });
+  };
+
   return (
     <motion.header
       initial={{ y: -40, opacity: 0 }}
@@ -27,59 +41,45 @@ function Navbar() {
             Features
           </a>
 
-          <Link
-            to="/login"
-            className="text-zinc-300 hover:text-white transition text-lg"
-          >
-            Login
-          </Link>
+          {!isLoggedIn ? (
+            <>
+              <Link
+                to="/login"
+                className="text-zinc-300 hover:text-white transition text-lg"
+              >
+                Login
+              </Link>
 
-          <Link
-            to="/register"
-            className="text-zinc-300 hover:text-white transition text-lg"
-          >
-            Register
-          </Link>
+              <Link
+                to="/register"
+                className="text-zinc-300 hover:text-white transition text-lg"
+              >
+                Register
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/dashboard">
+                <button className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold px-6 py-3 rounded-xl transition cursor-pointer">
+                  Dashboard
+                </button>
+              </Link>
 
-          <Link to="/dashboard">
-            <button className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold px-6 py-3 rounded-xl transition">
-              Dashboard
-            </button>
-          </Link>
+              <Link to="/dashboard?section=alerts" title="Alerts Inbox">
+                <div className="relative cursor-pointer hover:scale-110 transition">
+                  <BellDot className="text-emerald-400" size={22} />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                </div>
+              </Link>
 
-        <Link to="/dashboard">
-
-        <div
-        className="
-        relative
-        cursor-pointer
-        hover:scale-110
-        transition
-        "
-        >
-
-        <BellDot
-        className="
-        text-emerald-400
-        "
-        size={22}
-        />
-
-        <span
-        className="
-        absolute
-        -top-1
-        -right-1
-        w-2
-        h-2
-        bg-red-500
-        rounded-full
-        "
-        />
-
-        </div>
-
-        </Link>
+              <button
+                onClick={handleLogout}
+                className="text-zinc-300 hover:text-white transition text-lg cursor-pointer bg-transparent border-none"
+              >
+                Logout
+              </button>
+            </>
+          )}
 
         </nav>
 

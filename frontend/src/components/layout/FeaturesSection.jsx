@@ -21,7 +21,7 @@ export default function FeaturesSection() {
 
 return (
 
-<section className="bg-black px-8 py-28">
+<section id="features" className="bg-black px-8 py-28">
 
 <div className="max-w-7xl mx-auto">
 

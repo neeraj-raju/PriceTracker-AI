@@ -1,5 +1,6 @@
 package com.pricetracker.backend.scheduler;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.pricetracker.backend.model.PriceHistory;
 import com.pricetracker.backend.model.Product;
 import com.pricetracker.backend.repository.PriceHistoryRepository;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.pricetracker.backend.service.EmailService;
+import com.pricetracker.backend.service.WebPushService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,6 +26,9 @@ public class PriceTrackerScheduler {
     private final PriceHistoryRepository priceHistoryRepository;
     private final ScraperFactory scraperFactory;
     private final EmailService emailService;
+    private final WebPushService webPushService;
+
+    @Transactional
 
     @Scheduled(fixedRate = 300000)
     public void checkPrices() {
@@ -50,57 +55,85 @@ public class PriceTrackerScheduler {
                 BigDecimal newPrice =
                         new BigDecimal(priceObj.toString());
 
+                if (newPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                    log.warn("Scraped price is 0 or negative for product: {}. Skipping scheduler update.", product.getName());
+                    continue;
+                }
+
                 BigDecimal oldPrice =
                         product.getCurrentPrice();
 
-                boolean priceDropped =
-                        newPrice.compareTo(oldPrice) < 0;
-                if (priceDropped) {
+                if (newPrice.compareTo(oldPrice) != 0) {
+                    boolean priceDropped =
+                            newPrice.compareTo(oldPrice) < 0;
 
-                    product.getUserTrackingList()
-                            .forEach(
-                                    tracking ->
+                    if (priceDropped) {
 
-                                            emailService.sendPriceDropEmail(
+                        product.getUserTrackingList()
+                                .forEach(
+                                        tracking -> {
+                                            // 1. Target price logic: If targetPrice is set, only alert if newPrice <= targetPrice
+                                            if (tracking.getTargetPrice() != null && newPrice.compareTo(tracking.getTargetPrice()) > 0) {
+                                                return;
+                                            }
 
-                                                    tracking
-                                                            .getUser()
-                                                            .getEmail(),
+                                            // 2. Alert Dispatcher based on alertPreference
+                                            String pref = tracking.getAlertPreference() != null ? tracking.getAlertPreference() : "EMAIL";
 
-                                                    product.getName(),
+                                            if ("EMAIL".equalsIgnoreCase(pref) || "BOTH".equalsIgnoreCase(pref)) {
+                                                try {
+                                                    emailService.sendPriceDropEmail(
+                                                            tracking.getUser().getEmail(),
+                                                            product.getName(),
+                                                            oldPrice.toString(),
+                                                            newPrice.toString(),
+                                                            product.getUrl()
+                                                    );
+                                                } catch (Exception e) {
+                                                    log.error("Failed to send price drop email for product: {}", product.getName(), e);
+                                                }
+                                            }
 
-                                                    oldPrice.toString(),
+                                             if ("PUSH".equalsIgnoreCase(pref) || "BOTH".equalsIgnoreCase(pref)) {
+                                                 try {
+                                                     webPushService.sendPushNotification(
+                                                             tracking.getUser().getId(),
+                                                             "📉 Price Drop Alert!",
+                                                             String.format("The price of '%s' dropped to ₹%s!", product.getName(), newPrice),
+                                                             product.getUrl()
+                                                     );
+                                                 } catch (Exception e) {
+                                                     log.error("Failed to send Web Push alert for product: {}", product.getName(), e);
+                                                 }
+                                             }
+                                        }
+                                );
 
-                                                    newPrice.toString()
+                        log.info(
+                                "Price drop alerts sent for product: {}",
+                                product.getName()
+                        );
+                    }
 
-                                            )
-                            );
+                    product.setCurrentPrice(newPrice);
+                    productRepository.save(product);
+
+                    PriceHistory history = new PriceHistory();
+                    history.setProduct(product);
+                    history.setOldPrice(oldPrice);
+                    history.setNewPrice(newPrice);
+                    history.setPriceDropped(priceDropped);
+                    priceHistoryRepository.save(history);
 
                     log.info(
-                            "Price drop email sent for product: {}",
-                            product.getName()
+                            "Updated product: {} | Old Price: {} | New Price: {}",
+                            product.getName(),
+                            oldPrice,
+                            newPrice
                     );
+                } else {
+                    log.info("Price unchanged for product: {}", product.getName());
                 }
-
-                product.setCurrentPrice(newPrice);
-
-                productRepository.save(product);
-
-                PriceHistory history = new PriceHistory();
-
-                history.setProduct(product);
-                history.setOldPrice(oldPrice);
-                history.setNewPrice(newPrice);
-                history.setPriceDropped(priceDropped);
-
-                priceHistoryRepository.save(history);
-
-                log.info(
-                        "Updated product: {} | Old Price: {} | New Price: {}",
-                        product.getName(),
-                        oldPrice,
-                        newPrice
-                );
 
             } catch (Exception e) {
 

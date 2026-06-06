@@ -1,6 +1,14 @@
 import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+
 export default function HeroSection() {
-    const navigate = useNavigate()
+  const navigate = useNavigate()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("token"))
+  }, [])
+
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden px-6">
 
@@ -48,62 +56,94 @@ export default function HeroSection() {
           leading-relaxed
           "
         >
-          Monitor Amazon product prices in real-time
+          Monitor product prices in real-time
           with intelligent tracking, email alerts,
           and beautiful analytics.
         </p>
 
         <div className="flex justify-center gap-6 mt-12">
 
-          <button
+          {isLoggedIn ? (
+            <>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="
+                px-10
+                py-4
+                rounded-2xl
+                bg-emerald-500
+                hover:bg-emerald-400
+                font-bold
+                text-black
+                shadow-lg
+                shadow-emerald-500/30
+                transition
+                cursor-pointer
+                "
+              >
+                Go to Dashboard ➔
+              </button>
 
-          onClick={()=>
-          navigate("/dashboard")
-          }
+              <button
+                onClick={() => navigate("/dashboard?section=alerts")}
+                className="
+                px-10
+                py-4
+                rounded-2xl
+                border
+                border-gray-700
+                hover:border-emerald-400
+                text-emerald-400
+                transition
+                cursor-pointer
+                "
+              >
+                View Alerts 🔔
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate("/register")}
+                className="
+                px-10
+                py-4
+                rounded-2xl
+                bg-emerald-500
+                hover:bg-emerald-400
+                font-bold
+                text-black
+                shadow-lg
+                shadow-emerald-500/30
+                transition
+                cursor-pointer
+                "
+              >
+                Start Tracking ➔
+              </button>
 
-          className="
-          px-10
-          py-4
-          rounded-2xl
-          bg-emerald-500
-          hover:bg-emerald-400
-          font-bold
-          text-black
-          shadow-lg
-          shadow-emerald-500/30
-          transition
-          "
-          >
-
-          Start Tracking
-
-          </button>
-
-          <button
-
-          onClick={()=>
-          navigate("/dashboard")
-          }
-
-          className="
-          px-10
-          py-4
-          rounded-2xl
-          border
-          border-gray-700
-          hover:border-cyan-400
-          transition
-          "
-          >
-
-          Live Demo
-
-          </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="
+                px-10
+                py-4
+                rounded-2xl
+                border
+                border-gray-700
+                hover:border-cyan-400
+                transition
+                cursor-pointer
+                "
+              >
+                Sign In ➔
+              </button>
+            </>
+          )}
 
         </div>
 
       </div>
 
     </section>
-  );
+  )
 }

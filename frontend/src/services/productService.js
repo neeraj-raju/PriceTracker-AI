@@ -1,6 +1,6 @@
 import api from "./api";
 
-export const trackProduct = async (url) => {
+export const trackProduct = async (url, targetPrice, alertPreference) => {
 
 try {
 
@@ -8,7 +8,9 @@ const response =
 await api.post(
 "/products/track",
 {
-url
+url,
+targetPrice: targetPrice ? Number(targetPrice) : null,
+alertPreference: alertPreference || "EMAIL"
 }
 );
 
@@ -102,4 +104,40 @@ throw error;
 
 }
 
+};
+
+export const triggerTestAlert = async (id) => {
+  try {
+    const response = await api.post(`/products/${id}/test-alert`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getVapidPublicKey = async () => {
+  try {
+    const response = await api.get("/notifications/vapid-public-key");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const subscribeToPush = async (subscription) => {
+  try {
+    const response = await api.post("/notifications/subscribe", subscription);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAlerts = async () => {
+  try {
+    const response = await api.get("/products/alerts");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };

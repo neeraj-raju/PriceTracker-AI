@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom"
 import { Mail, Lock } from "lucide-react"
@@ -8,6 +8,12 @@ import { loginUser } from "../services/authService"
 function Login() {
 
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -28,13 +34,16 @@ function Login() {
 
     try {
 
-      const data = await loginUser(formData)
+      const response = await loginUser(formData)
+      console.log("LOGIN RESPONSE:", response)
 
-      localStorage.setItem("token", data.token)
-
-      alert("Login Successful 🚀")
-
-      navigate("/dashboard")
+      if (response && response.success && response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token)
+        alert("Login Successful 🚀")
+        navigate("/dashboard", { replace: true })
+      } else {
+        alert(response?.message || "Invalid credentials")
+      }
 
     } catch (error) {
 
@@ -180,8 +189,9 @@ function Login() {
 
       </div>
 
-    </div>
-  )
+      </div>
+
+    )
 }
 
-export default Login
+ export default Login

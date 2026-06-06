@@ -1,22 +1,30 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom"
 import {
   User,
   Mail,
-  Lock
+  Lock,
+  Phone
 } from "lucide-react"
 
-import { registerUser } from "../services/authService"
+import { registerUser, loginUser } from "../services/authService"
 
 function Register() {
 
   const navigate = useNavigate()
 
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: ""
+    password: "",
+    phoneNumber: ""
   })
 
   const handleChange = (e) => {
@@ -34,9 +42,20 @@ function Register() {
 
       await registerUser(formData)
 
-      alert("Registration Successful 🚀")
+      // Automatically login the user after successful registration
+      const loginResponse = await loginUser({
+        email: formData.email,
+        password: formData.password
+      })
 
-      navigate("/login")
+      if (loginResponse && loginResponse.success && loginResponse.data && loginResponse.data.token) {
+        localStorage.setItem("token", loginResponse.data.token)
+        alert("Registration Successful & Logged In! 🚀")
+        navigate("/dashboard", { replace: true })
+      } else {
+        alert("Registration Successful! Please log in.")
+        navigate("/login")
+      }
 
     } catch (error) {
 
@@ -140,6 +159,30 @@ function Register() {
                   placeholder="Enter your email"
                   onChange={handleChange}
                   value={formData.email}
+                  autoComplete="off"
+                  className="w-full bg-transparent outline-none px-4 py-4 text-white"
+                />
+
+              </div>
+            </div>
+
+            {/* PHONE NUMBER */}
+            <div className="mb-6">
+
+              <label className="text-zinc-300 mb-2 block">
+                Phone Number (WhatsApp)
+              </label>
+
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
+
+                <Phone className="text-zinc-400" size={20} />
+
+                <input
+                  type="text"
+                  name="phoneNumber"
+                  placeholder="Enter phone with country code (e.g. +91...)"
+                  onChange={handleChange}
+                  value={formData.phoneNumber}
                   autoComplete="off"
                   className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />

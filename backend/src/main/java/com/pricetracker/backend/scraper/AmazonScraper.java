@@ -25,7 +25,9 @@ public class AmazonScraper implements ScraperStrategy {
 
         return url != null &&
                 (url.contains("amazon.in")
-                        || url.contains("amazon.com"));
+                        || url.contains("amazon.com")
+                        || url.contains("amzn.in")
+                        || url.contains("amzn.to"));
     }
 
     @Override
@@ -39,7 +41,10 @@ public class AmazonScraper implements ScraperStrategy {
 
             Document doc = Jsoup.connect(url)
                     .userAgent(userAgent)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
                     .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Connection", "keep-alive")
+                    .header("Upgrade-Insecure-Requests", "1")
                     .timeout(timeout)
                     .get();
 

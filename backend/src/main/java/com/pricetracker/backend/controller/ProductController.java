@@ -1,11 +1,14 @@
 package com.pricetracker.backend.controller;
 
 import com.pricetracker.backend.model.User;
+import com.pricetracker.backend.repository.UserRepository;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.pricetracker.backend.dto.TrackProductRequest;
 import com.pricetracker.backend.model.Product;
 import com.pricetracker.backend.service.ProductService;
 import com.pricetracker.backend.model.PriceHistory;
+import com.pricetracker.backend.dto.AlertResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,25 +24,37 @@ import java.util.Map;
 public class ProductController {
 
     private final ProductService productService;
+    private final UserRepository userRepository;
 
     @PostMapping("/track")
+
     public Product trackProduct(
 
             @RequestBody
             TrackProductRequest request,
 
             @AuthenticationPrincipal
-            User user
+            UserDetails userDetails
 
     ){
 
-        if(user == null){
+        User user =
 
-            throw new RuntimeException(
-                    "User not authenticated"
-            );
+                userRepository
+                        .findByEmail(
 
-        }
+                                userDetails
+                                        .getUsername()
+
+                        )
+
+                        .orElseThrow(
+
+                                () -> new RuntimeException(
+                                        "User not found"
+                                )
+
+                        );
 
         return productService.trackProduct(
 
@@ -52,28 +67,36 @@ public class ProductController {
     }
 
     @GetMapping
+
     public List<Product> getProducts(
 
             @AuthenticationPrincipal
-            User user
+            UserDetails userDetails
 
     ){
 
-        if(user == null){
+        User user =
 
-            throw new RuntimeException(
-                    "User not authenticated"
-            );
+                userRepository
+                        .findByEmail(
 
-        }
+                                userDetails
+                                        .getUsername()
 
-        return
-                productService
-                        .getUserProducts(
+                        )
 
-                                user.getId()
+                        .orElseThrow(
+
+                                () -> new RuntimeException(
+                                        "User not found"
+                                )
 
                         );
+
+        return productService
+                .getUserProducts(
+                        user.getId()
+                );
 
     }
     @GetMapping("/{id}/history")
@@ -94,21 +117,43 @@ public class ProductController {
     }
     @DeleteMapping("/{id}")
     public void removeProduct(
-            @PathVariable
-            Long id
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        productService
-                .removeProduct(id);
-
+        productService.removeUserTracking(user.getId(), id);
     }
+
+    @PostMapping("/{id}/test-alert")
+    public void triggerTestAlert(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        productService.triggerTestAlert(id, user);
+    }
+
     @GetMapping("/stats")
-    public Map<String, Long>
-    getStats(){
+    public Map<String, Long> getStats(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return
-                productService
-                        .getDashboardStats();
+        return productService.getDashboardStats(user.getId());
+    }
 
+    @GetMapping("/alerts")
+    public List<AlertResponse> getAlerts(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return productService.getAlertNotifications(user.getId());
     }
 }

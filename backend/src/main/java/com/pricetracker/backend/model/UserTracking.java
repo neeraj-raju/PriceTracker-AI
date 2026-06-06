@@ -37,6 +37,10 @@ public class UserTracking {
     @Builder.Default
     private Boolean alertEnabled = true;
 
+    @Column(length = 20, nullable = false)
+    @Builder.Default
+    private String alertPreference = "EMAIL";
+
     private String note;
 
     @CreationTimestamp
