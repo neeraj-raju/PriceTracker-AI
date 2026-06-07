@@ -9,10 +9,13 @@ import {
 } from "lucide-react"
 
 import { registerUser, loginUser } from "../services/authService"
+import { useToast } from "../context/ToastContext"
+import { trackProduct } from "../services/productService"
 
 function Register() {
 
   const navigate = useNavigate()
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (localStorage.getItem("token")) {
@@ -24,6 +27,7 @@ function Register() {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phoneNumber: ""
   })
 
@@ -38,6 +42,11 @@ function Register() {
 
     e.preventDefault()
 
+    if (formData.password !== formData.confirmPassword) {
+      showToast("Passwords do not match!", "error")
+      return
+    }
+
     try {
 
       await registerUser(formData)
@@ -50,10 +59,25 @@ function Register() {
 
       if (loginResponse && loginResponse.success && loginResponse.data && loginResponse.data.token) {
         localStorage.setItem("token", loginResponse.data.token)
-        alert("Registration Successful & Logged In! 🚀")
+        localStorage.setItem("name", loginResponse.data.name || "")
+
+        // Auto-track product if user pasted a link on home page
+        const pendingUrl = sessionStorage.getItem("pendingTrackUrl")
+        if (pendingUrl) {
+          try {
+            showToast("Tracking your product... ⏳", "info")
+            await trackProduct(pendingUrl)
+            sessionStorage.removeItem("pendingTrackUrl")
+            showToast("Product tracked successfully! 🚀", "success")
+          } catch (trackError) {
+            console.error("Auto tracking failed:", trackError)
+            showToast("Could not auto-track the product. Please try adding it manually.", "error")
+          }
+        }
+
         navigate("/dashboard", { replace: true })
       } else {
-        alert("Registration Successful! Please log in.")
+        showToast("Registration Successful! Please log in.", "info")
         navigate("/login")
       }
 
@@ -61,7 +85,7 @@ function Register() {
 
       console.error(error)
 
-      alert("Registration Failed")
+      showToast("Registration Failed", "error")
     }
   }
 
@@ -190,8 +214,8 @@ function Register() {
               </div>
             </div>
 
-            {/* PASSWORD */}
-            <div className="mb-8">
+             {/* PASSWORD */}
+            <div className="mb-6">
 
               <label className="text-zinc-300 mb-2 block">
                 Password
@@ -207,6 +231,30 @@ function Register() {
                   placeholder="Create password"
                   onChange={handleChange}
                   value={formData.password}
+                  autoComplete="new-password"
+                  className="w-full bg-transparent outline-none px-4 py-4 text-white"
+                />
+
+              </div>
+            </div>
+
+            {/* CONFIRM PASSWORD */}
+            <div className="mb-8">
+
+              <label className="text-zinc-300 mb-2 block">
+                Confirm Password
+              </label>
+
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
+
+                <Lock className="text-zinc-400" size={20} />
+
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  onChange={handleChange}
+                  value={formData.confirmPassword}
                   autoComplete="new-password"
                   className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />

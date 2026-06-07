@@ -141,3 +141,12 @@ export const getAlerts = async () => {
     throw error;
   }
 };
+
+export const getPublicDeals = async () => {
+  try {
+    const response = await api.get("/products/public-deals");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

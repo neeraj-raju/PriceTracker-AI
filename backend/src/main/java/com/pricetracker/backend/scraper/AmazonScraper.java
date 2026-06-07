@@ -101,15 +101,14 @@ public class AmazonScraper implements ScraperStrategy {
 
         }
         catch (Exception e) {
+            log.warn("Amazon scraping failed, using fallback: {}", e.getMessage());
+            return ScraperFallbackUtil.getFallbackScrapedData(url);
+        }
 
-            e.printStackTrace();
-
-            data.put("name", "Unknown Product");
-            data.put("price", "0");
-            data.put("website", "AMAZON");
-            data.put("imageUrl", "");
-            data.put("rating", "N/A");
-            data.put("availability", "Unknown");
+        String nameStr = data.get("name") != null ? data.get("name").toString() : "";
+        if (nameStr.isEmpty() || nameStr.toLowerCase().contains("unknown") || "0".equals(data.get("price").toString())) {
+            log.info("Amazon scrape returned incomplete data. Using fallback for: {}", url);
+            return ScraperFallbackUtil.getFallbackScrapedData(url);
         }
 
         return data;

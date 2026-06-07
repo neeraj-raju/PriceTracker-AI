@@ -26,6 +26,11 @@ public class ProductController {
     private final ProductService productService;
     private final UserRepository userRepository;
 
+    @GetMapping("/public-deals")
+    public List<Map<String, Object>> getPublicDeals() {
+        return productService.getPublicDeals();
+    }
+
     @PostMapping("/track")
 
     public Product trackProduct(

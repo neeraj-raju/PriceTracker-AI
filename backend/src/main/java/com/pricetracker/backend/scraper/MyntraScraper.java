@@ -142,13 +142,14 @@ public class MyntraScraper implements ScraperStrategy {
             log.info("Myntra Scraped Data: {}", data);
 
         } catch (Exception e) {
-            log.error("Error scraping Myntra product: {}", url, e);
-            data.put("name", "Unknown Myntra Product");
-            data.put("price", "0");
-            data.put("website", "MYNTRA");
-            data.put("imageUrl", "");
-            data.put("rating", "N/A");
-            data.put("availability", "Unknown");
+            log.warn("Myntra scraping failed, using fallback: {}", e.getMessage());
+            return ScraperFallbackUtil.getFallbackScrapedData(url);
+        }
+
+        String nameStr = data.get("name") != null ? data.get("name").toString() : "";
+        if (nameStr.isEmpty() || nameStr.toLowerCase().contains("unknown") || "0".equals(data.get("price").toString())) {
+            log.info("Myntra scrape returned incomplete data. Using fallback for: {}", url);
+            return ScraperFallbackUtil.getFallbackScrapedData(url);
         }
 
         return data;

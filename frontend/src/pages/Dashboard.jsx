@@ -19,6 +19,7 @@ TrendingDown,
 Box,
 LogOut
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 import {
 useEffect,
@@ -29,6 +30,7 @@ import {
 useNavigate,
 useLocation
 } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
 
 import {
 trackProduct,
@@ -46,6 +48,7 @@ from "../services/productService";
 export default function Dashboard() {
     const navigate = useNavigate()
     const location = useLocation()
+    const { showToast } = useToast()
 
    const handleLogout = ()=>{
 
@@ -56,6 +59,7 @@ export default function Dashboard() {
    }
 
 const [url,setUrl]=useState("");
+const [userName, setUserName]=useState("");
 const [targetPrice, setTargetPrice]=useState("");
 const [alertPreference, setAlertPreference]=useState("EMAIL");
 
@@ -192,6 +196,7 @@ setProducts([]);
       navigate("/login", { replace: true });
       return;
     }
+    setUserName(localStorage.getItem("name") || "");
     loadProducts();
     loadStats();
     registerPushNotifications();
@@ -303,7 +308,7 @@ const handleTrack = async () => {
 
     if (!url.trim()) {
 
-        alert("Enter product URL");
+        showToast("Please enter a valid product URL", "error");
 
         return;
 
@@ -315,7 +320,7 @@ const handleTrack = async () => {
 
         await trackProduct(url, targetPrice, alertPreference);
 
-        alert("Product Added Successfully");
+        showToast("Product added to watchlist successfully! 🚀", "success");
 
         setUrl("");
         setTargetPrice("");
@@ -343,19 +348,7 @@ const handleTrack = async () => {
    error.response?.data
    )
 
-   alert(
-
-   JSON.stringify(
-
-   error.response?.data
-
-   ||
-
-   error.message
-
-   )
-
-   )
+   showToast(error.response?.data?.message || error.message || "Failed to track product", "error");
 
    }
 
@@ -372,9 +365,7 @@ try{
 
 await removeProduct(id);
 
-alert(
-"Product Removed"
-);
+        showToast("Product removed from watchlist", "info");
 
 await loadProducts();
 await loadStats();
@@ -384,9 +375,7 @@ catch(error){
 
 console.log(error);
 
-alert(
-"Failed to Remove Product"
-);
+        showToast("Failed to remove product from watchlist", "error");
 
 }
 
@@ -394,7 +383,7 @@ alert(
 const handleSendTestAlert = async (id) => {
   try {
     await triggerTestAlert(id);
-    alert("Test Price-Drop Alert Dispatched! Check your configured channel (Email or WhatsApp logs).");
+    showToast("Test Price-Drop Alert Dispatched! Check your configured channel (Email or WhatsApp logs). 🔔", "success");
     await loadProducts();
     await loadStats();
     if (selectedProduct === id) {
@@ -402,7 +391,7 @@ const handleSendTestAlert = async (id) => {
     }
   } catch (error) {
     console.error("Test alert failed:", error);
-    alert("Failed to trigger test alert.");
+    showToast("Failed to trigger test alert.", "error");
   }
 };
 
@@ -544,26 +533,15 @@ setActiveSection("alerts")
 
 </div>
 
-<button
-
-onClick={handleLogout}
-
-className="
-flex
-items-center
-gap-3
-text-red-400
-hover:text-red-300
-transition
-font-medium
-"
+<motion.button
+  onClick={handleLogout}
+  whileHover={{ x: 4 }}
+  whileTap={{ scale: 0.97 }}
+  className="flex items-center gap-3 text-red-400 hover:text-red-300 transition bg-transparent border-none cursor-pointer font-medium"
 >
-
-<LogOut size={20}/>
-
-Logout
-
-</button>
+  <LogOut size={20}/>
+  Logout
+</motion.button>
 
 </div>
 
@@ -763,24 +741,14 @@ text-emerald-400
 
 </div>
 
-<button
-
-onClick={()=>
-handleRemove(product.id)
-}
-
-className="
-bg-red-500
-px-4
-py-2
-rounded-xl
-"
-
+<motion.button
+  onClick={() => handleRemove(product.id)}
+  whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(239,68,68,0.3)" }}
+  whileTap={{ scale: 0.95 }}
+  className="bg-red-500 px-4 py-2 rounded-xl cursor-pointer transition text-white font-bold"
 >
-
-Remove
-
-</button>
+  Remove
+</motion.button>
 
 </div>
 
@@ -936,6 +904,29 @@ stats.alertsSent
 
 </div>
 
+            {/* AI Buying Insight Box */}
+            <div className="bg-gradient-to-r from-emerald-950/20 via-cyan-950/20 to-black border border-emerald-500/20 rounded-3xl p-6 mb-6 flex items-start gap-4 shadow-lg shadow-emerald-500/5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-emerald-500/5 blur-2xl rounded-full" />
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3.5 rounded-2xl flex-shrink-0 font-mono text-xl">
+                ✨
+              </div>
+              <div>
+                <h3 className="font-extrabold text-lg text-zinc-100 flex items-center gap-2">
+                  AI Buying Insight of the Day
+                  <span className="bg-emerald-950 text-emerald-400 border border-emerald-900/50 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                    SaaS Engine
+                  </span>
+                </h3>
+                <p className="text-zinc-400 text-sm mt-1.5 leading-relaxed">
+                  {products.length === 0
+                    ? "Welcome to PriceTracker AI! Paste a product link below to initialize intelligence insights on price drops and volatility."
+                    : stats.priceDrops > 0
+                    ? `Great news! ${stats.priceDrops} product(s) in your watchlist have dropped below their target price thresholds and are at a good buying point today.`
+                    : "No major price price drops detected in the last 24 hours. The market looks stable — we suggest holding off on large purchases for a few more days."}
+                </p>
+              </div>
+            </div>
+
 {/* Track Product */}
 
 <div
@@ -969,7 +960,7 @@ Track Product
     <input
       value={url}
       onChange={(e)=> setUrl(e.target.value)}
-      placeholder="Paste Amazon product URL here..."
+      placeholder="Paste Amazon, Flipkart, Myntra, or Ajio product link..."
       className="bg-black border border-[#242424] rounded-2xl px-5 py-4 outline-none focus:border-emerald-500 transition text-zinc-300 w-full"
     />
   </div>
@@ -997,13 +988,15 @@ Track Product
   </div>
 </div>
 <div className="flex justify-end mt-6">
-  <button
+  <motion.button
     disabled={loading}
     onClick={handleTrack}
-    className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-10 py-4 rounded-2xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+    whileHover={{ scale: 1.02, boxShadow: "0px 0px 25px rgba(16,185,129,0.45)" }}
+    whileTap={{ scale: 0.98 }}
+    className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-10 py-4 rounded-2xl transition shadow-lg disabled:opacity-50 cursor-pointer"
   >
     {loading ? "Tracking Product..." : "Add Product to Tracking"}
-  </button>
+  </motion.button>
 </div>
 </div>
 
@@ -1220,13 +1213,15 @@ gap-2
   Tracking
 </div>
 
-<button
+<motion.button
 
 onClick={()=>
 loadHistory(
 product.id
 )
 }
+whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(6,182,212,0.3)" }}
+whileTap={{ scale: 0.95 }}
 
 className="
 bg-cyan-500
@@ -1237,38 +1232,23 @@ px-4
 py-2
 rounded-xl
 transition
+cursor-pointer
 "
 
 >
 
 Graph
 
-</button>
+</motion.button>
 
-<button
-
-onClick={()=>
-handleRemove(
-product.id
-)
-}
-
-className="
-bg-red-500
-hover:bg-red-400
-text-white
-font-bold
-px-4
-py-2
-rounded-xl
-transition
-"
-
+<motion.button
+  onClick={() => handleRemove(product.id)}
+  whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(239,68,68,0.3)" }}
+  whileTap={{ scale: 0.95 }}
+  className="bg-red-500 hover:bg-red-400 text-white font-bold px-4 py-2 rounded-xl transition cursor-pointer"
 >
-
-Remove
-
-</button>
+  Remove
+</motion.button>
 
 </div>
 
@@ -1380,39 +1360,15 @@ onClick
 
 return (
 
-<button
-
-onClick={onClick}
-
-className={`
-
-w-full
-flex
-items-center
-gap-4
-px-5
-py-4
-rounded-2xl
-font-semibold
-transition
-
-${
-active
-?
-"bg-emerald-500 text-black"
-:
-"hover:bg-[#111111]"
-}
-
-`}
-
+<motion.button
+  onClick={onClick}
+  whileHover={{ x: 4 }}
+  whileTap={{ scale: 0.98 }}
+  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-left transition-all duration-200 cursor-pointer ${active ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'}`}
 >
-
-{icon}
-
-{name}
-
-</button>
+  {icon}
+  {name}
+</motion.button>
 
 );
 

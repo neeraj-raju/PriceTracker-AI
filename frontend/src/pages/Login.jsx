@@ -4,10 +4,13 @@ import { Link, useNavigate } from "react-router-dom"
 import { Mail, Lock } from "lucide-react"
 
 import { loginUser } from "../services/authService"
+import { useToast } from "../context/ToastContext"
+import { trackProduct } from "../services/productService"
 
 function Login() {
 
   const navigate = useNavigate()
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (localStorage.getItem("token")) {
@@ -39,17 +42,32 @@ function Login() {
 
       if (response && response.success && response.data && response.data.token) {
         localStorage.setItem("token", response.data.token)
-        alert("Login Successful 🚀")
+        localStorage.setItem("name", response.data.name || "")
+
+        // Auto-track product if user pasted a link on home page
+        const pendingUrl = sessionStorage.getItem("pendingTrackUrl")
+        if (pendingUrl) {
+          try {
+            showToast("Tracking your product... ⏳", "info")
+            await trackProduct(pendingUrl)
+            sessionStorage.removeItem("pendingTrackUrl")
+            showToast("Product tracked successfully! 🚀", "success")
+          } catch (trackError) {
+            console.error("Auto tracking failed:", trackError)
+            showToast("Could not auto-track the product. Please try adding it manually.", "error")
+          }
+        }
+
         navigate("/dashboard", { replace: true })
       } else {
-        alert(response?.message || "Invalid credentials")
+        showToast(response?.message || "Invalid credentials", "error")
       }
 
     } catch (error) {
 
       console.error(error)
 
-      alert("Invalid Credentials")
+      showToast("Invalid Credentials", "error")
     }
   }
 
@@ -153,6 +171,17 @@ function Login() {
                 />
 
               </div>
+            </div>
+
+            {/* REMEMBER ME & FORGOT PASSWORD */}
+            <div className="flex items-center justify-between mb-8 text-sm text-zinc-400">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" className="rounded border-white/10 bg-white/5 text-emerald-500 focus:ring-0 focus:ring-offset-0" />
+                <span>Remember me</span>
+              </label>
+              <a href="#" onClick={(e) => { e.preventDefault(); showToast("Password reset link has been simulated. Under construction 🛠️", "info"); }} className="hover:text-emerald-400 transition">
+                Forgot password?
+              </a>
             </div>
 
             {/* BUTTON */}
