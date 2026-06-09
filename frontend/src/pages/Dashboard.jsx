@@ -721,8 +721,9 @@ items-center
 
 <h3
 className="
-font-bold
+font-bold cursor-pointer hover:text-emerald-400 transition
 "
+onClick={() => window.open(product.url, "_blank")}
 >
 
 {product.name}
@@ -1104,8 +1105,9 @@ object-contain
 bg-white
 rounded-2xl
 p-2
+cursor-pointer hover:opacity-80 transition
 "
-
+onClick={() => window.open(product.url, "_blank")}
 />
 
 <div>
@@ -1115,7 +1117,9 @@ className="
 font-bold
 text-lg
 max-w-[450px]
+cursor-pointer hover:text-emerald-400 transition
 "
+onClick={() => window.open(product.url, "_blank")}
 >
 
 {product.name}
