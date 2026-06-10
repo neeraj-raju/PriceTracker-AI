@@ -17,7 +17,8 @@ Bell,
 Search,
 TrendingDown,
 Box,
-LogOut
+LogOut,
+History
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -41,7 +42,8 @@ getStats,
 triggerTestAlert,
 getVapidPublicKey,
 subscribeToPush,
-getAlerts
+getAlerts,
+getHistory
 }
 from "../services/productService";
 
@@ -75,6 +77,7 @@ alertsSent:0
 
 });
 const [alerts, setAlerts] = useState([]);
+const [historyList, setHistoryList] = useState([]);
 const [search,
 setSearch]=useState("");
 const [priceHistory,
@@ -271,9 +274,41 @@ const getSavingsInfo = (oldPrice, newPrice) => {
   };
 };
 
+const loadHistoryList = async () => {
+  try {
+    const data = await getHistory();
+    if (Array.isArray(data)) {
+      setHistoryList(data);
+    } else {
+      setHistoryList([]);
+    }
+  } catch (error) {
+    console.error("LOAD HISTORY ERROR:", error);
+    setHistoryList([]);
+  }
+};
+
+const handleReTrack = async (productUrl, targetPrice) => {
+  setLoading(true);
+  try {
+    await trackProduct(productUrl, targetPrice, "EMAIL");
+    showToast("Product reactivated for tracking successfully! 🚀", "success");
+    await loadProducts();
+    await loadStats();
+    await loadHistoryList();
+  } catch (error) {
+    console.error("RE-TRACK ERROR:", error);
+    showToast(error.response?.data?.message || error.message || "Failed to reactivate product", "error");
+  } finally {
+    setLoading(false);
+  }
+};
+
 useEffect(() => {
   if (activeSection === "alerts") {
     loadAlerts();
+  } else if (activeSection === "history") {
+    loadHistoryList();
   }
 }, [activeSection]);
 const filteredProducts =
@@ -526,6 +561,15 @@ name="Alerts"
 active={activeSection==="alerts"}
 onClick={()=>
 setActiveSection("alerts")
+}
+/>
+
+<SidebarButton
+icon={<History size={22}/>}
+name="History"
+active={activeSection==="history"}
+onClick={()=>
+setActiveSection("history")
 }
 />
 
@@ -864,6 +908,133 @@ activeSection==="alerts" && (
 }
 
 {
+activeSection === "history" && (
+  <div className="bg-[#060606] border border-[#171717] rounded-3xl p-6 shadow-lg shadow-emerald-500/5">
+    <div className="flex justify-between items-center mb-8 border-b border-[#1f1f1f] pb-5">
+      <div>
+        <h2 className="text-3xl font-black text-emerald-400 tracking-tight flex items-center gap-2">
+          Tracking History 📜
+        </h2>
+        <p className="text-zinc-500 text-sm mt-1">A complete history of all products you have tracked or are tracking</p>
+      </div>
+      <div className="bg-emerald-950/30 border border-emerald-900/50 px-4 py-2 rounded-xl text-emerald-400 font-bold text-sm">
+        Total Items: {historyList.length}
+      </div>
+    </div>
+
+    {historyList.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="text-5xl mb-4 opacity-55">📜</div>
+        <h3 className="text-xl font-bold text-zinc-300">No history available</h3>
+        <p className="text-zinc-500 text-sm mt-1 max-w-sm">When you start tracking products, they will appear in your history checklist.</p>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {[...historyList].reverse().map((item) => {
+          const initial = Number(item.initialPrice);
+          const current = Number(item.currentPrice);
+          const diff = initial - current;
+          const percent = initial > 0 ? Math.round((diff / initial) * 100) : 0;
+          const isPriceDropped = diff > 0;
+          const isPriceRaised = diff < 0;
+
+          return (
+            <div key={item.trackingId} className="bg-[#0c0c0c] border border-[#181818] hover:border-[#222] rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-5 transition duration-300 shadow-md">
+              {/* Product Thumbnail */}
+              <div className="h-16 w-16 bg-white border border-[#222] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 p-1">
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.productName} className="h-full w-full object-contain" />
+                ) : (
+                  <span className="text-zinc-600 text-xl font-bold">{item.website?.charAt(0)}</span>
+                )}
+              </div>
+
+              {/* Product Details */}
+              <div className="flex-grow min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                    item.website === 'AMAZON' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                    item.website === 'FLIPKART' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                    item.website === 'MYNTRA' ? 'bg-pink-500/10 text-pink-400 border border-pink-500/20' :
+                    'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  }`}>
+                    {item.website}
+                  </span>
+                  <span className="text-zinc-500 text-xs">Tracked since: {formatTimeAgo(item.trackedSince)}</span>
+                </div>
+
+                <h4 className="text-zinc-200 font-bold text-sm truncate max-w-xl hover:text-emerald-400 transition cursor-pointer" onClick={() => window.open(item.productUrl || '#', '_blank')}>
+                  {item.productName}
+                </h4>
+
+                {/* Price Before and After side-by-side */}
+                <div className="flex items-center gap-4 mt-2 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-500 text-xs uppercase font-medium">Price Before:</span>
+                    <span className="text-zinc-300 font-bold text-xs">₹{initial.toLocaleString()}</span>
+                  </div>
+                  <span className="text-zinc-600">|</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-500 text-xs uppercase font-medium">Price After:</span>
+                    <span className={`font-extrabold text-xs ${isPriceDropped ? 'text-emerald-400' : isPriceRaised ? 'text-red-400' : 'text-zinc-300'}`}>
+                      ₹{current.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {diff !== 0 && (
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                      isPriceDropped 
+                        ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50' 
+                        : 'bg-red-950/40 text-red-400 border border-red-900/50'
+                    }`}>
+                      {isPriceDropped ? `🔥 -${percent}%` : `📈 +${Math.abs(percent)}%`}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Badge & Actions */}
+              <div className="flex md:flex-col items-end gap-3 w-full md:w-auto border-t border-[#161616] md:border-t-0 pt-3 md:pt-0 justify-between md:justify-center flex-shrink-0">
+                {item.status === 'ACTIVE' ? (
+                  <div className="flex items-center gap-1.5 bg-[#091a14] border border-[#164d36] text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-bold shadow-md">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Currently Tracking
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-red-950/20 border border-red-900/30 text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold">
+                    Removed
+                  </div>
+                )}
+
+                {item.status === 'ACTIVE' ? (
+                  <a href={item.productUrl} target="_blank" rel="noopener noreferrer" className="bg-[#121212] border border-[#222] text-zinc-400 hover:text-zinc-100 font-extrabold px-4 py-2 rounded-xl text-xs transition text-center shadow-md w-full md:w-auto">
+                    View Website ➔
+                  </a>
+                ) : (
+                  <motion.button
+                    disabled={loading}
+                    onClick={() => handleReTrack(item.productUrl, item.targetPrice)}
+                    whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(16,185,129,0.3)" }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs transition text-center shadow-md cursor-pointer w-full md:w-auto disabled:opacity-50"
+                  >
+                    Track Again 🔄
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)
+}
+
+{
 activeSection==="dashboard" && (
 
 <>
@@ -904,29 +1075,6 @@ stats.alertsSent
 />
 
 </div>
-
-            {/* AI Buying Insight Box */}
-            <div className="bg-gradient-to-r from-emerald-950/20 via-cyan-950/20 to-black border border-emerald-500/20 rounded-3xl p-6 mb-6 flex items-start gap-4 shadow-lg shadow-emerald-500/5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-emerald-500/5 blur-2xl rounded-full" />
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3.5 rounded-2xl flex-shrink-0 font-mono text-xl">
-                ✨
-              </div>
-              <div>
-                <h3 className="font-extrabold text-lg text-zinc-100 flex items-center gap-2">
-                  AI Buying Insight of the Day
-                  <span className="bg-emerald-950 text-emerald-400 border border-emerald-900/50 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
-                    SaaS Engine
-                  </span>
-                </h3>
-                <p className="text-zinc-400 text-sm mt-1.5 leading-relaxed">
-                  {products.length === 0
-                    ? "Welcome to PriceTracker AI! Paste a product link below to initialize intelligence insights on price drops and volatility."
-                    : stats.priceDrops > 0
-                    ? `Great news! ${stats.priceDrops} product(s) in your watchlist have dropped below their target price thresholds and are at a good buying point today.`
-                    : "No major price price drops detected in the last 24 hours. The market looks stable — we suggest holding off on large purchases for a few more days."}
-                </p>
-              </div>
-            </div>
 
 {/* Track Product */}
 

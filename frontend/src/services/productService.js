@@ -150,3 +150,12 @@ export const getPublicDeals = async () => {
     throw error;
   }
 };
+
+export const getHistory = async () => {
+  try {
+    const response = await api.get("/products/history");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

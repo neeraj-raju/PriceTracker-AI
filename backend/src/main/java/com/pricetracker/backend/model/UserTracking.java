@@ -41,9 +41,24 @@ public class UserTracking {
     @Builder.Default
     private String alertPreference = "EMAIL";
 
+    @Column(length = 20)
+    @Builder.Default
+    private String status = "ACTIVE";
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal initialPrice;
+
     private String note;
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime trackedSince;
+
+    public String getStatus() {
+        return this.status == null ? "ACTIVE" : this.status;
+    }
+
+    public BigDecimal getInitialPrice() {
+        return this.initialPrice == null ? (product != null ? product.getCurrentPrice() : BigDecimal.ZERO) : this.initialPrice;
+    }
 }

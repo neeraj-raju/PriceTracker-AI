@@ -9,6 +9,7 @@ import com.pricetracker.backend.model.Product;
 import com.pricetracker.backend.service.ProductService;
 import com.pricetracker.backend.model.PriceHistory;
 import com.pricetracker.backend.dto.AlertResponse;
+import com.pricetracker.backend.dto.TrackingHistoryResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -103,6 +104,16 @@ public class ProductController {
                         user.getId()
                 );
 
+    }
+
+    @GetMapping("/history")
+    public List<TrackingHistoryResponse> getTrackingHistory(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return productService.getTrackingHistory(user.getId());
     }
     @GetMapping("/{id}/history")
     public List<PriceHistory>

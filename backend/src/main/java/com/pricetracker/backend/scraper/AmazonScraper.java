@@ -114,60 +114,87 @@ public class AmazonScraper implements ScraperStrategy {
         return data;
     }
 
+    private boolean isAvoidablePrice(Element el) {
+        if (el == null) {
+            return false;
+        }
+        for (Element parent : el.parents()) {
+            String id = parent.id().toLowerCase();
+            String className = parent.className().toLowerCase();
+            if (id.contains("emi") || className.contains("emi") || 
+                id.contains("installment") || className.contains("installment") ||
+                id.contains("sponsored") || className.contains("sponsored") ||
+                id.contains("recommend") || className.contains("recommend") ||
+                id.contains("similar") || className.contains("similar") ||
+                id.contains("fbt") || id.contains("bought") ||
+                className.contains("fbt") || className.contains("bought") ||
+                id.contains("sp_detail") || className.contains("sp_detail") ||
+                id.contains("personalization") || className.contains("personalization")) {
+                return true;
+            }
+            String parentText = parent.ownText().toLowerCase();
+            if (parentText.contains("emi starts") || parentText.contains("installment") || parentText.contains("pay over time")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private String extractPrice(Document doc) {
+        String[] wrappers = {
+            "#corePriceDisplay_desktop_feature_div .a-price",
+            "#corePrice_desktop .a-price",
+            "#corePrice_feature_div .a-price",
+            "#price_inside_buybox .a-price",
+            "#apex_desktop .a-price",
+            ".a-price"
+        };
 
-        Element wholeEl =
-                doc.selectFirst(".a-price-whole");
+        for (String selector : wrappers) {
+            for (Element priceWrapper : doc.select(selector)) {
+                if (isAvoidablePrice(priceWrapper)) {
+                    continue;
+                }
 
-        if (wholeEl != null) {
-
-            String whole =
-                    wholeEl.text()
+                Element wholeEl = priceWrapper.selectFirst(".a-price-whole");
+                if (wholeEl != null) {
+                    String whole = wholeEl.text()
                             .replace(",", "")
                             .replace(".", "")
                             .trim();
 
-            Element fractionEl =
-                    doc.selectFirst(".a-price-fraction");
+                    Element fractionEl = priceWrapper.selectFirst(".a-price-fraction");
+                    String fraction = fractionEl != null ? fractionEl.text() : "00";
 
-            String fraction =
-                    fractionEl != null
-                            ? fractionEl.text()
-                            : "00";
+                    String fullPrice = clean(whole + "." + fraction);
+                    if (!"0".equals(fullPrice)) {
+                        return fullPrice;
+                    }
+                }
 
-            return clean(
-                    whole + "." + fraction
-            );
+                Element offscreen = priceWrapper.selectFirst(".a-offscreen");
+                if (offscreen != null) {
+                    String fullPrice = clean(offscreen.text());
+                    if (!"0".equals(fullPrice)) {
+                        return fullPrice;
+                    }
+                }
+            }
         }
 
-        Element offscreen =
-                doc.selectFirst(".a-price .a-offscreen");
-
-        if (offscreen != null) {
-
-            return clean(
-                    offscreen.text()
-            );
-        }
-
-        Element price1 =
-                doc.selectFirst("#priceblock_ourprice");
-
-        if (price1 != null) {
-
-            return clean(
-                    price1.text()
-            );
-        }
-
-        Element price2 =
-                doc.selectFirst("#priceblock_dealprice");
-
-        if (price2 != null) {
-
-            return clean(
-                    price2.text()
-            );
+        String[] fallbackSelectors = {
+            "#priceblock_ourprice",
+            "#priceblock_dealprice",
+            "#priceblock_saleprice"
+        };
+        for (String selector : fallbackSelectors) {
+            Element el = doc.selectFirst(selector);
+            if (el != null && !isAvoidablePrice(el)) {
+                String fullPrice = clean(el.text());
+                if (!"0".equals(fullPrice)) {
+                    return fullPrice;
+                }
+            }
         }
 
         return "0";

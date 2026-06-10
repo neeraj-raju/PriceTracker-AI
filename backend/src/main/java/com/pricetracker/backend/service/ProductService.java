@@ -3,6 +3,7 @@ package com.pricetracker.backend.service;
 
 import com.pricetracker.backend.dto.AlertResponse;
 import com.pricetracker.backend.dto.TrackProductRequest;
+import com.pricetracker.backend.dto.TrackingHistoryResponse;
 import com.pricetracker.backend.model.PriceHistory;
 import com.pricetracker.backend.model.Product;
 import com.pricetracker.backend.repository.PriceHistoryRepository;
@@ -20,10 +21,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +64,26 @@ public class ProductService {
 
         if (existingProduct.isPresent()) {
             product = existingProduct.get();
+            Optional<UserTracking> existingTracking = userTrackingRepository.findByUserIdAndProductId(user.getId(), product.getId());
+            if (existingTracking.isPresent()) {
+                UserTracking tracking = existingTracking.get();
+                if ("ACTIVE".equalsIgnoreCase(tracking.getStatus())) {
+                    throw new RuntimeException("Already tracking this product");
+                } else {
+                    // Reactivate it!
+                    tracking.setStatus("ACTIVE");
+                    tracking.setTargetPrice(request.getTargetPrice() != null ? request.getTargetPrice() : product.getCurrentPrice());
+                    if (request.getAlertPreference() != null) {
+                        tracking.setAlertPreference(request.getAlertPreference());
+                    } else {
+                        tracking.setAlertPreference("EMAIL");
+                    }
+                    tracking.setInitialPrice(product.getCurrentPrice());
+                    tracking.setTrackedSince(LocalDateTime.now());
+                    userTrackingRepository.save(tracking);
+                    return product;
+                }
+            }
         } else {
             Map<String, Object> scrapedData;
             try {
@@ -100,6 +123,8 @@ public class ProductService {
         } else {
             tracking.setAlertPreference("EMAIL");
         }
+        tracking.setStatus("ACTIVE");
+        tracking.setInitialPrice(product.getCurrentPrice());
 
         userTrackingRepository.save(tracking);
 
@@ -123,12 +148,34 @@ public class ProductService {
     }
     @Transactional
     public void removeUserTracking(Long userId, Long productId) {
-        userTrackingRepository.deleteByUserIdAndProductId(userId, productId);
-
-        // If no more users are tracking this product, delete it globally to clean up the DB
-        if (userTrackingRepository.countByProductId(productId) == 0) {
-            productRepository.deleteById(productId);
+        Optional<UserTracking> trackingOpt = userTrackingRepository.findByUserIdAndProductId(userId, productId);
+        if (trackingOpt.isPresent()) {
+            UserTracking tracking = trackingOpt.get();
+            tracking.setStatus("REMOVED");
+            userTrackingRepository.save(tracking);
         }
+    }
+
+    public List<TrackingHistoryResponse> getTrackingHistory(Long userId) {
+        List<UserTracking> trackings = userTrackingRepository.findByUserId(userId);
+        return trackings.stream()
+                .map(ut -> {
+                    Product p = ut.getProduct();
+                    return TrackingHistoryResponse.builder()
+                            .trackingId(ut.getId())
+                            .productId(p.getId())
+                            .productName(p.getName())
+                            .productUrl(p.getUrl())
+                            .imageUrl(p.getImageUrl())
+                            .website(p.getWebsite())
+                            .initialPrice(ut.getInitialPrice())
+                            .currentPrice(p.getCurrentPrice())
+                            .targetPrice(ut.getTargetPrice())
+                            .trackedSince(ut.getTrackedSince())
+                            .status(ut.getStatus())
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     public List<PriceHistory> getPriceHistory(

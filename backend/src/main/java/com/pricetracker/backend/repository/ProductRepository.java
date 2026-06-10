@@ -24,6 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            JOIN UserTracking ut
            ON ut.product = p
            WHERE ut.user.id = :userId
+           AND (ut.status = 'ACTIVE' OR ut.status IS NULL)
            """)
     List<Product> findAllByUserId(Long userId);
 
@@ -34,6 +35,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            ON ut.product = p
            WHERE ut.user.id = :userId
            AND p.url = :url
+           AND (ut.status = 'ACTIVE' OR ut.status IS NULL)
            """)
     Optional<Product> findTrackedProduct(
             Long userId,
