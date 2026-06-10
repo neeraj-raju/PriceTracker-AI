@@ -43,6 +43,7 @@ function Login() {
       if (response && response.success && response.data && response.data.token) {
         localStorage.setItem("token", response.data.token)
         localStorage.setItem("name", response.data.name || "")
+        localStorage.setItem("email", response.data.email || "")
 
         // Auto-track product if user pasted a link on home page
         const pendingUrl = sessionStorage.getItem("pendingTrackUrl")

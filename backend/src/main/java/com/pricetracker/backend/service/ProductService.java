@@ -193,7 +193,7 @@ public class ProductService {
     public Map<String, Long> getDashboardStats(Long userId) {
         Map<String, Long> stats = new HashMap<>();
 
-        long trackedProductsCount = userTrackingRepository.findByUserId(userId).size();
+        long trackedProductsCount = userTrackingRepository.countActiveByUserId(userId);
         stats.put("trackedProducts", trackedProductsCount);
 
         List<AlertResponse> userAlerts = priceHistoryRepository.findAlertNotificationsByUserId(userId);

@@ -19,3 +19,8 @@ export const loginUser = async (userData) => {
 
   return response.data
 }
+
+export const deleteUserAccount = async () => {
+  const response = await api.delete("/users/me");
+  return response.data;
+};

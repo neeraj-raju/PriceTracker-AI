@@ -159,3 +159,56 @@ export const getHistory = async () => {
     throw error;
   }
 };
+
+export const getAIInsight = async (productId) => {
+  try {
+    const response = await api.get(`/products/${productId}/ai-insight`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const createComparisonGroup = async (groupName, productUrls) => {
+  try {
+    const response = await api.post("/comparison/groups", { groupName, productUrls });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getComparisonGroups = async () => {
+  try {
+    const response = await api.get("/comparison/groups");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getGroupComparisonResult = async (groupId) => {
+  try {
+    const response = await api.get(`/comparison/groups/${groupId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteComparisonGroup = async (groupId) => {
+  try {
+    await api.delete(`/comparison/groups/${groupId}`);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const refreshComparisonGroupPrices = async (groupId) => {
+  try {
+    const response = await api.post(`/comparison/groups/${groupId}/refresh`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

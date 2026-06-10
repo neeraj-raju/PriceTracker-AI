@@ -10,6 +10,8 @@ import com.pricetracker.backend.service.ProductService;
 import com.pricetracker.backend.model.PriceHistory;
 import com.pricetracker.backend.dto.AlertResponse;
 import com.pricetracker.backend.dto.TrackingHistoryResponse;
+import com.pricetracker.backend.dto.AIInsightReport;
+import com.pricetracker.backend.service.AIAnalysisService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +28,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final UserRepository userRepository;
+    private final AIAnalysisService aiAnalysisService;
 
     @GetMapping("/public-deals")
     public List<Map<String, Object>> getPublicDeals() {
@@ -130,6 +133,13 @@ public class ProductController {
                                 id
                         );
 
+    }
+
+    @GetMapping("/{productId}/ai-insight")
+    public AIInsightReport getAIInsight(
+            @PathVariable Long productId
+    ) {
+        return aiAnalysisService.getCachedOrGenerateReport(productId);
     }
     @DeleteMapping("/{id}")
     public void removeProduct(

@@ -4,6 +4,7 @@ import Home from "../pages/Home"
 import Login from "../pages/Login"
 import Register from "../pages/Register"
 import Dashboard from "../pages/Dashboard"
+import ComparisonPage from "../pages/ComparisonPage"
 
 function AppRoutes() {
   return (
@@ -18,6 +19,8 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
         <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route path="/compare" element={<ComparisonPage />} />
 
       </Routes>
 

@@ -48,6 +48,10 @@ public class UserTracking {
     @Column(precision = 10, scale = 2)
     private BigDecimal initialPrice;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comparison_group_id")
+    private ComparisonGroup comparisonGroup;
+
     private String note;
 
     @CreationTimestamp

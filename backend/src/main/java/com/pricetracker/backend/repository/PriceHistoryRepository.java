@@ -39,6 +39,7 @@ WHERE ph.priceDropped=true
            "JOIN ph.product p " +
            "JOIN p.userTrackingList ut " +
            "WHERE ut.user.id = :userId AND ph.priceDropped = true " +
+           "AND (ut.status = 'ACTIVE' OR ut.status IS NULL) " +
            "ORDER BY ph.checkedAt DESC")
     List<AlertResponse> findAlertNotificationsByUserId(@Param("userId") Long userId);
 

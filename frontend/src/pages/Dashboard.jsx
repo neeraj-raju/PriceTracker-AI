@@ -18,8 +18,11 @@ Search,
 TrendingDown,
 Box,
 LogOut,
-History
+History,
+GitCompare,
+Settings
 } from "lucide-react";
+import { deleteUserAccount } from "../services/authService";
 import { motion } from "framer-motion";
 
 import {
@@ -32,6 +35,7 @@ useNavigate,
 useLocation
 } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
+import AIInsightCard from "../components/AIInsightCard";
 
 import {
 trackProduct,
@@ -59,6 +63,26 @@ export default function Dashboard() {
    navigate("/login",{replace:true})
 
    }
+
+   const handleDeleteAccount = async () => {
+     const confirmDelete = window.confirm(
+       "⚠️ WARNING: Are you absolutely sure you want to permanently delete your account? This will wipe out all your watchlists, saved comparison groups, and tracking history. This cannot be undone."
+     );
+     if (!confirmDelete) return;
+
+     try {
+       showToast("Deleting your account... ⏳", "info");
+       await deleteUserAccount();
+       showToast("Your account has been deleted. Goodbye! 👋", "success");
+       
+       localStorage.clear();
+       sessionStorage.clear();
+       navigate("/register", { replace: true });
+     } catch (err) {
+       console.error("Failed to delete account:", err);
+       showToast(err.response?.data?.message || err.message || "Failed to delete your account. Please try again.", "error");
+     }
+   };
 
 const [url,setUrl]=useState("");
 const [userName, setUserName]=useState("");
@@ -573,6 +597,24 @@ setActiveSection("history")
 }
 />
 
+<SidebarButton
+icon={<GitCompare size={22}/>}
+name="Compare"
+active={activeSection==="compare"}
+onClick={()=>
+navigate("/compare")
+}
+/>
+
+<SidebarButton
+icon={<Settings size={22}/>}
+name="Settings"
+active={activeSection==="settings"}
+onClick={()=>
+setActiveSection("settings")
+}
+/>
+
 </div>
 
 </div>
@@ -786,14 +828,25 @@ text-emerald-400
 
 </div>
 
-<motion.button
-  onClick={() => handleRemove(product.id)}
-  whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(239,68,68,0.3)" }}
-  whileTap={{ scale: 0.95 }}
-  className="bg-red-500 px-4 py-2 rounded-xl cursor-pointer transition text-white font-bold"
->
-  Remove
-</motion.button>
+<div className="flex gap-2">
+  <motion.button
+    onClick={() => navigate(`/compare?prefillUrl=${encodeURIComponent(product.url)}&prefillName=${encodeURIComponent(product.name)}`)}
+    whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(16,185,129,0.3)" }}
+    whileTap={{ scale: 0.95 }}
+    className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2 rounded-xl transition cursor-pointer text-xs"
+  >
+    Compare
+  </motion.button>
+
+  <motion.button
+    onClick={() => handleRemove(product.id)}
+    whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(239,68,68,0.3)" }}
+    whileTap={{ scale: 0.95 }}
+    className="bg-red-500 hover:bg-red-400 text-white font-bold px-4 py-2 rounded-xl transition cursor-pointer text-xs"
+  >
+    Remove
+  </motion.button>
+</div>
 
 </div>
 
@@ -1030,6 +1083,61 @@ activeSection === "history" && (
         })}
       </div>
     )}
+  </div>
+)
+}
+
+{
+activeSection === "settings" && (
+  <div className="bg-[#060606] border border-[#171717] rounded-3xl p-8 shadow-lg shadow-emerald-500/5 max-w-4xl">
+    <div className="flex justify-between items-center mb-8 border-b border-[#1f1f1f] pb-5">
+      <div>
+        <h2 className="text-3xl font-black text-emerald-400 tracking-tight flex items-center gap-2">
+          Account Settings ⚙️
+        </h2>
+        <p className="text-zinc-500 text-sm mt-1">Manage your user profile details and account status.</p>
+      </div>
+    </div>
+
+    <div className="space-y-8">
+      {/* Profile Info */}
+      <div className="bg-[#0c0c0c] border border-[#1c1c1c] rounded-2xl p-6">
+        <h3 className="text-lg font-bold text-zinc-200 mb-4">Profile Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-zinc-500 text-xs font-bold uppercase">Name</span>
+            <div className="bg-black border border-[#222] rounded-xl px-4 py-3 text-zinc-300 font-medium select-all">
+              {userName || "N/A"}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-zinc-500 text-xs font-bold uppercase">Email Address</span>
+            <div className="bg-black border border-[#222] rounded-xl px-4 py-3 text-zinc-300 font-medium select-all">
+              {localStorage.getItem("email") || "N/A"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Account Deletion */}
+      <div className="bg-red-950/10 border border-red-900/20 rounded-2xl p-6">
+        <h3 className="text-lg font-bold text-red-400 mb-2">Danger Zone</h3>
+        <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+          Permanently delete your account and all associated data. This action is irreversible and will delete your active watchlists, comparison groups, web push subscriptions, and history records.
+        </p>
+        
+        <div className="flex items-center">
+          <motion.button
+            onClick={handleDeleteAccount}
+            whileHover={{ scale: 1.02, boxShadow: "0px 0px 20px rgba(239,68,68,0.25)" }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-red-500 hover:bg-red-400 text-white font-extrabold px-6 py-3.5 rounded-xl transition cursor-pointer text-sm"
+          >
+            Delete My Account
+          </motion.button>
+        </div>
+      </div>
+    </div>
   </div>
 )
 }
@@ -1394,6 +1502,15 @@ Graph
 </motion.button>
 
 <motion.button
+  onClick={() => navigate(`/compare?prefillUrl=${encodeURIComponent(product.url)}&prefillName=${encodeURIComponent(product.name)}`)}
+  whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(16,185,129,0.3)" }}
+  whileTap={{ scale: 0.95 }}
+  className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2 rounded-xl transition cursor-pointer"
+>
+  Compare
+</motion.button>
+
+<motion.button
   onClick={() => handleRemove(product.id)}
   whileHover={{ scale: 1.05, boxShadow: "0px 0px 15px rgba(239,68,68,0.3)" }}
   whileTap={{ scale: 0.95 }}
@@ -1475,6 +1592,8 @@ priceHistory[selectedProduct] && (() => {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      <AIInsightCard productId={selectedProduct} productName={selectedProductObj?.name} />
     </div>
   );
 })()}

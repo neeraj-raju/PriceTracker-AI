@@ -60,6 +60,7 @@ function Register() {
       if (loginResponse && loginResponse.success && loginResponse.data && loginResponse.data.token) {
         localStorage.setItem("token", loginResponse.data.token)
         localStorage.setItem("name", loginResponse.data.name || "")
+        localStorage.setItem("email", loginResponse.data.email || "")
 
         // Auto-track product if user pasted a link on home page
         const pendingUrl = sessionStorage.getItem("pendingTrackUrl")

@@ -72,6 +72,16 @@ public class PriceTrackerScheduler {
                         product.getUserTrackingList()
                                 .forEach(
                                         tracking -> {
+                                            // Only alert if the tracking is currently ACTIVE
+                                            if (!"ACTIVE".equalsIgnoreCase(tracking.getStatus())) {
+                                                return;
+                                            }
+
+                                            // Only alert if alert notifications are enabled
+                                            if (tracking.getAlertEnabled() != null && !tracking.getAlertEnabled()) {
+                                                return;
+                                            }
+
                                             // 1. Target price logic: If targetPrice is set, only alert if newPrice <= targetPrice
                                             if (tracking.getTargetPrice() != null && newPrice.compareTo(tracking.getTargetPrice()) > 0) {
                                                 return;
