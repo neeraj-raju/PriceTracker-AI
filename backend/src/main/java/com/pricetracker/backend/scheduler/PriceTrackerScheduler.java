@@ -12,6 +12,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.pricetracker.backend.service.EmailService;
 import com.pricetracker.backend.service.WebPushService;
+import com.pricetracker.backend.service.StatsService;
+import com.pricetracker.backend.service.AIAnalysisService;
+import com.pricetracker.backend.model.Alert;
+import com.pricetracker.backend.repository.AlertRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +31,9 @@ public class PriceTrackerScheduler {
     private final ScraperFactory scraperFactory;
     private final EmailService emailService;
     private final WebPushService webPushService;
+    private final AlertRepository alertRepository;
+    private final StatsService statsService;
+    private final AIAnalysisService aiAnalysisService;
 
     @Transactional
 
@@ -35,7 +42,7 @@ public class PriceTrackerScheduler {
 
         log.info("Scheduler running: Checking product prices...");
 
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findActivelyTrackedProducts();
 
         for (Product product : products) {
 
@@ -45,6 +52,11 @@ public class PriceTrackerScheduler {
                         scraperFactory
                                 .getScraperFor(product.getUrl())
                                 .scrape(product.getUrl());
+
+                if (scrapedData == null) {
+                    log.warn("Scraped data is null for product: {}. Skipping scheduler update.", product.getName());
+                    continue;
+                }
 
                 Object priceObj = scrapedData.get("price");
 
@@ -63,9 +75,58 @@ public class PriceTrackerScheduler {
                 BigDecimal oldPrice =
                         product.getCurrentPrice();
 
-                if (newPrice.compareTo(oldPrice) != 0) {
-                    boolean priceDropped =
-                            newPrice.compareTo(oldPrice) < 0;
+                String oldAvailability = product.getAvailability();
+                String newAvailability = scrapedData.get("availability") != null ? scrapedData.get("availability").toString() : "In Stock";
+
+                boolean wasOutOfStock = oldAvailability != null && (oldAvailability.toLowerCase().contains("out") || oldAvailability.toLowerCase().contains("unavail") || oldAvailability.toLowerCase().contains("out of stock"));
+                boolean isCurrentlyInStock = newAvailability != null && !(newAvailability.toLowerCase().contains("out") || newAvailability.toLowerCase().contains("unavail") || newAvailability.toLowerCase().contains("out of stock"));
+                boolean backInStock = wasOutOfStock && isCurrentlyInStock;
+
+                if (newPrice.compareTo(oldPrice) != 0 || backInStock) {
+                    boolean priceDropped = newPrice.compareTo(oldPrice) < 0;
+
+                    // Save Alert to database
+                    String alertType = "SIGNIFICANT_DROP";
+                    double dropPercent = 0.0;
+
+                    if (backInStock) {
+                        alertType = "BACK_IN_STOCK";
+                    } else if (newPrice.compareTo(oldPrice) > 0) {
+                        alertType = "PRICE_RISING_WARNING";
+                    } else { // priceDropped
+                        dropPercent = ((oldPrice.subtract(newPrice)).doubleValue() / oldPrice.doubleValue()) * 100.0;
+                        BigDecimal lowestEver = priceHistoryRepository.findLowestPriceByProductId(product.getId()).orElse(oldPrice);
+                        if (newPrice.compareTo(lowestEver) < 0) {
+                            alertType = "ALL_TIME_LOW";
+                        } else {
+                            boolean targetReached = product.getUserTrackingList().stream()
+                                    .anyMatch(ut -> "ACTIVE".equalsIgnoreCase(ut.getStatus()) && ut.getTargetPrice() != null && newPrice.compareTo(ut.getTargetPrice()) <= 0);
+                            if (targetReached) {
+                                alertType = "TARGET_PRICE_REACHED";
+                            }
+                        }
+                    }
+
+                    boolean isDuplicateAlert = false;
+                    java.util.Optional<Alert> lastAlertOpt = alertRepository.findFirstByProductIdOrderByCreatedAtDesc(product.getId());
+                    if (lastAlertOpt.isPresent()) {
+                        Alert lastAlert = lastAlertOpt.get();
+                        if (lastAlert.getAlertType().equals(alertType) && 
+                            lastAlert.getCreatedAt() != null && 
+                            lastAlert.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusMinutes(30))) {
+                            isDuplicateAlert = true;
+                        }
+                    }
+
+                    if (!isDuplicateAlert) {
+                        Alert alertEntity = Alert.builder()
+                                .alertType(alertType)
+                                .platform(product.getWebsite())
+                                .dropPercent(dropPercent)
+                                .productId(product.getId())
+                                .build();
+                        alertRepository.save(alertEntity);
+                    }
 
                     if (priceDropped) {
 
@@ -126,6 +187,7 @@ public class PriceTrackerScheduler {
                     }
 
                     product.setCurrentPrice(newPrice);
+                    product.setAvailability(newAvailability);
                     productRepository.save(product);
 
                     PriceHistory history = new PriceHistory();
@@ -135,14 +197,18 @@ public class PriceTrackerScheduler {
                     history.setPriceDropped(priceDropped);
                     priceHistoryRepository.save(history);
 
+                    aiAnalysisService.invalidateCache(product.getId());
+                    statsService.invalidateCache();
+
                     log.info(
-                            "Updated product: {} | Old Price: {} | New Price: {}",
+                            "Updated product: {} | Old Price: {} | New Price: {} | Availability: {}",
                             product.getName(),
                             oldPrice,
-                            newPrice
+                            newPrice,
+                            newAvailability
                     );
                 } else {
-                    log.info("Price unchanged for product: {}", product.getName());
+                    log.info("Price and availability unchanged for product: {}", product.getName());
                 }
 
             } catch (Exception e) {

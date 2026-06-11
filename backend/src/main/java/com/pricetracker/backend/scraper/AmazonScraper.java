@@ -118,25 +118,53 @@ public class AmazonScraper implements ScraperStrategy {
         if (el == null) {
             return false;
         }
+        if (isAvoidableElement(el)) {
+            return true;
+        }
         for (Element parent : el.parents()) {
-            String id = parent.id().toLowerCase();
-            String className = parent.className().toLowerCase();
-            if (id.contains("emi") || className.contains("emi") || 
-                id.contains("installment") || className.contains("installment") ||
-                id.contains("sponsored") || className.contains("sponsored") ||
-                id.contains("recommend") || className.contains("recommend") ||
-                id.contains("similar") || className.contains("similar") ||
-                id.contains("fbt") || id.contains("bought") ||
-                className.contains("fbt") || className.contains("bought") ||
-                id.contains("sp_detail") || className.contains("sp_detail") ||
-                id.contains("personalization") || className.contains("personalization")) {
-                return true;
-            }
-            String parentText = parent.ownText().toLowerCase();
-            if (parentText.contains("emi starts") || parentText.contains("installment") || parentText.contains("pay over time")) {
+            if (isAvoidableElement(parent)) {
                 return true;
             }
         }
+        return false;
+    }
+
+    private boolean isAvoidableElement(Element el) {
+        if (el == null) {
+            return false;
+        }
+        String id = el.id().toLowerCase();
+        String className = el.className().toLowerCase();
+        
+        if (id.contains("emi") || className.contains("emi") || 
+            id.contains("installment") || className.contains("installment") ||
+            id.contains("sponsored") || className.contains("sponsored") ||
+            id.contains("recommend") || className.contains("recommend") ||
+            id.contains("similar") || className.contains("similar") ||
+            id.contains("fbt") || id.contains("bought") ||
+            className.contains("fbt") || className.contains("bought") ||
+            id.contains("sp_detail") || className.contains("sp_detail") ||
+            id.contains("personalization") || className.contains("personalization") ||
+            className.contains("a-text-price") || className.contains("strike") ||
+            id.contains("mrp") || className.contains("mrp") ||
+            id.contains("listprice") || className.contains("listprice") ||
+            className.contains("list-price") || id.contains("originalprice") ||
+            className.contains("original-price") || id.contains("coupon") || 
+            className.contains("coupon") || id.contains("bank") ||
+            className.contains("bank") || id.contains("offer") ||
+            className.contains("offer") || className.contains("a-size-small")) {
+            return true;
+        }
+        
+        String ownText = el.ownText().toLowerCase();
+        if (ownText.contains("emi starts") || ownText.contains("installment") || 
+            ownText.contains("pay over time") || ownText.contains("coupon") || 
+            ownText.contains("bank offer") || ownText.contains("save") || 
+            ownText.contains("off with") || ownText.contains("mrp") ||
+            ownText.contains("original price")) {
+            return true;
+        }
+        
         return false;
     }
 

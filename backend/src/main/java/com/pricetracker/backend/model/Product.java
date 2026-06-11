@@ -43,6 +43,9 @@ public class Product {
 
     private String availability;
 
+    @Column(length = 50)
+    private String category;
+
     @UpdateTimestamp
     private LocalDateTime lastChecked;
 

@@ -100,11 +100,18 @@ public class AjioScraper implements ScraperStrategy {
     private String extractPrice(Document doc) {
         Element priceEl = doc.selectFirst(".prod-sp"); // Special Price class in Ajio
         if (priceEl == null) priceEl = doc.selectFirst("div.prod-sp");
-        if (priceEl == null) priceEl = doc.selectFirst(".prod-price-section");
         
         if (priceEl != null) {
             return clean(priceEl.text());
         }
+        
+        Element sectionEl = doc.selectFirst(".prod-price-section");
+        if (sectionEl != null) {
+            Element clonedSection = sectionEl.clone();
+            clonedSection.select(".prod-cp, .prod-mrp, .discount").remove();
+            return clean(clonedSection.text());
+        }
+        
         return "0";
     }
 

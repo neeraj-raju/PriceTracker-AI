@@ -45,6 +45,11 @@ public class AIAnalysisService {
         }
     }
 
+    public void invalidateCache(Long productId) {
+        log.info("Invalidating AI analysis cache for product: {}", productId);
+        cache.remove(productId);
+    }
+
     public AIInsightReport getCachedOrGenerateReport(Long productId) {
         CachedInsight cached = cache.get(productId);
         if (cached != null && !cached.isExpired()) {

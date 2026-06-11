@@ -152,8 +152,19 @@ public class MyntraScraper implements ScraperStrategy {
 
             // 2. Extract Price
             Element priceEl = doc.selectFirst(".pdp-price");
-            if (priceEl == null) priceEl = doc.selectFirst(".pdp-discount");
-            data.put("price", priceEl != null ? clean(priceEl.text()) : "0");
+            if (priceEl != null) {
+                Element strongEl = priceEl.selectFirst("strong");
+                if (strongEl != null) {
+                    data.put("price", clean(strongEl.text()));
+                } else {
+                    Element clonedPrice = priceEl.clone();
+                    clonedPrice.select("s, .pdp-discount, .pdp-mrp").remove();
+                    data.put("price", clean(clonedPrice.text()));
+                }
+            } else {
+                Element discountEl = doc.selectFirst(".pdp-discount");
+                data.put("price", discountEl != null ? clean(discountEl.text()) : "0");
+            }
 
             // 3. Extract Image URL
             String imageUrl = "";

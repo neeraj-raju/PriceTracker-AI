@@ -34,15 +34,14 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
-
-    private final PriceHistoryRepository
-            priceHistoryRepository;
-
+    private final PriceHistoryRepository priceHistoryRepository;
     private final ScraperFactory scraperFactory;
-    private final UserTrackingRepository
-            userTrackingRepository;
+    private final UserTrackingRepository userTrackingRepository;
     private final EmailService emailService;
     private final WebPushService webPushService;
+    private final CategoryDetector categoryDetector;
+    private final StatsService statsService;
+    private final AIAnalysisService aiAnalysisService;
 
     public Product trackProduct(
             TrackProductRequest request,
@@ -81,6 +80,7 @@ public class ProductService {
                     tracking.setInitialPrice(product.getCurrentPrice());
                     tracking.setTrackedSince(LocalDateTime.now());
                     userTrackingRepository.save(tracking);
+                    statsService.invalidateCache();
                     return product;
                 }
             }
@@ -109,6 +109,7 @@ public class ProductService {
             product.setImageUrl(scrapedData.get("imageUrl") != null ? scrapedData.get("imageUrl").toString() : "");
             product.setWebsite(scrapedData.get("website") != null ? scrapedData.get("website").toString() : "AMAZON");
             product.setAvailability(scrapedData.get("availability") != null ? scrapedData.get("availability").toString() : "In Stock");
+            product.setCategory(categoryDetector.detectCategory(product.getName()));
             
             product = productRepository.save(product);
             isNewProduct = true;
@@ -127,6 +128,7 @@ public class ProductService {
         tracking.setInitialPrice(product.getCurrentPrice());
 
         userTrackingRepository.save(tracking);
+        statsService.invalidateCache();
 
         if (isNewProduct) {
             PriceHistory history = new PriceHistory();
@@ -153,6 +155,7 @@ public class ProductService {
             UserTracking tracking = trackingOpt.get();
             tracking.setStatus("REMOVED");
             userTrackingRepository.save(tracking);
+            statsService.invalidateCache();
         }
     }
 
@@ -240,6 +243,8 @@ public class ProductService {
 
         product.setCurrentPrice(newPrice);
         productRepository.save(product);
+        aiAnalysisService.invalidateCache(productId);
+        statsService.invalidateCache();
 
         String pref = tracking.getAlertPreference() != null ? tracking.getAlertPreference() : "EMAIL";
 

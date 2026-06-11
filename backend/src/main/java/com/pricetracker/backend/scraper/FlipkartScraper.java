@@ -198,7 +198,6 @@ public class FlipkartScraper implements ScraperStrategy {
 
     private String extractPrice(Document doc) {
         Element priceEl = doc.selectFirst(".Nx9OIx"); // Modern Flipkart price wrapper
-        if (priceEl == null) priceEl = doc.selectFirst(".yKfJKb");
         if (priceEl == null) priceEl = doc.selectFirst("div._30jeq3"); // Legacy price class
         if (priceEl == null) priceEl = doc.selectFirst(".hlbyli");
         

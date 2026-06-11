@@ -26,10 +26,22 @@ public interface PriceHistoryRepository extends JpaRepository<PriceHistory, Long
 
     long countByProductIdAndPriceDroppedTrue(Long productId);
     long countByPriceDroppedTrue();
+
+    @Query("SELECT COUNT(ph) FROM PriceHistory ph JOIN ph.product p WHERE p.website = :platform AND ph.priceDropped = true AND ph.checkedAt >= :date AND EXISTS (SELECT 1 FROM UserTracking ut WHERE ut.product = p AND (ut.status = 'ACTIVE' OR ut.status IS NULL))")
+    long countPriceDropsByPlatformAndDateRange(@Param("platform") String platform, @Param("date") java.time.LocalDateTime date);
+
+    @Query("SELECT COUNT(ph) FROM PriceHistory ph JOIN ph.product p WHERE p.website = :platform AND ph.priceDropped = true AND ph.checkedAt >= :startDate AND ph.checkedAt < :endDate AND EXISTS (SELECT 1 FROM UserTracking ut WHERE ut.product = p AND (ut.status = 'ACTIVE' OR ut.status IS NULL))")
+    long countPriceDropsByPlatformAndDateRangeBetween(@Param("platform") String platform, @Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
+
+    @Query("SELECT AVG(ph.oldPrice - ph.newPrice) FROM PriceHistory ph JOIN ph.product p WHERE p.website = :platform AND ph.priceDropped = true AND EXISTS (SELECT 1 FROM UserTracking ut WHERE ut.product = p AND (ut.status = 'ACTIVE' OR ut.status IS NULL))")
+    java.util.Optional<Double> findAverageSavingByPlatform(@Param("platform") String platform);
+
     @Query("""
 SELECT COUNT(ph)
 FROM PriceHistory ph
+JOIN ph.product p
 WHERE ph.priceDropped=true
+AND EXISTS (SELECT 1 FROM UserTracking ut WHERE ut.product = p AND (ut.status = 'ACTIVE' OR ut.status IS NULL))
 """)
     long getPriceDropCount();
 
@@ -40,6 +52,7 @@ WHERE ph.priceDropped=true
            "JOIN p.userTrackingList ut " +
            "WHERE ut.user.id = :userId AND ph.priceDropped = true " +
            "AND (ut.status = 'ACTIVE' OR ut.status IS NULL) " +
+           "AND (ut.trackedSince IS NULL OR ph.checkedAt >= ut.trackedSince) " +
            "ORDER BY ph.checkedAt DESC")
     List<AlertResponse> findAlertNotificationsByUserId(@Param("userId") Long userId);
 

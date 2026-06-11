@@ -7,8 +7,12 @@ const faqItems = [
     answer: "Our backend runs automated scheduling jobs that scrape your tracked product pages periodically. We query the platforms multiple times a day to catch flash sales, coupon reductions, and sudden price drop events."
   },
   {
-    question: "Do I need to leave my computer or browser open?",
-    answer: "No! The tracker runs entirely on our secure cloud servers. Once you paste a link and add it to your watchlist, you can shut down your device. We will monitor the price in the background and notify you immediately."
+    question: "How does the AI Price Intelligence recommendation work?",
+    answer: "The AI engine analyzes a product's price history stored in the database. It uses statistical algorithms like Standard Deviation to calculate volatility, and Linear Regression to map price trends. It then compares the current price against historical lowest and average prices to suggest 'Buy Now', 'Wait', or 'Monitor'—with zero placeholders or fake data."
+  },
+  {
+    question: "Can I compare product prices across different shopping websites?",
+    answer: "Yes! Using our Comparison Groups feature, you can add multiple product links from Amazon, Flipkart, Myntra, or Ajio into a single group. The dashboard will compare their live prices side-by-side and highlight the cheapest store dynamically."
   },
   {
     question: "What channels can I receive price drop alerts on?",
@@ -16,11 +20,7 @@ const faqItems = [
   },
   {
     question: "What websites are supported for price tracking?",
-    answer: "We support major online retailers including Amazon, Flipkart, Myntra, and Ajio. We are constantly updating our scrapers to bypass antibot blocks and support new online commerce platforms."
-  },
-  {
-    question: "Is there a limit on how many products I can track?",
-    answer: "No! PriceTracker AI is 100% free with no hidden tiers or payment walls. You can monitor unlimited items, customize target thresholds, and set up push/email alerts for as many products as you want."
+    answer: "We support major online retailers including Amazon, Flipkart, Myntra, and Ajio. We use high-reliability HTML scrapers combined with curl fallbacks to fetch actual final checkout values while ignoring EMI ads, coupons, or original MRP text."
   }
 ]
 
@@ -43,8 +43,8 @@ export default function FaqSection() {
           <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
             Frequently Asked Questions
           </h2>
-          <p className="text-zinc-400 text-[15px] max-w-lg mx-auto">
-            Everything you need to know about our free price monitoring system.
+          <p className="text-zinc-400 text-base max-w-lg mx-auto font-medium">
+            Everything you need to know about our price monitoring and AI intelligence systems.
           </p>
         </div>
 
