@@ -4,6 +4,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Local configuration overrides containing sensitive secrets
+**/src/main/resources/application-local.properties
+
+
 ### STS ###
 .apt_generated
 .classpath

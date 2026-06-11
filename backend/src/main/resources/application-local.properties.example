@@ -1,0 +1,20 @@
+# =========================================================================
+# LOCAL DEVELOPMENT CONFIG TEMPLATE (Rename to application-local.properties)
+# =========================================================================
+
+# Database Configuration
+# spring.datasource.password=your_database_password
+
+# JWT Secret (Must be a strong key)
+# jwt.secret=your_super_secret_jwt_key_at_least_32_characters_long
+
+# Email Configurations for Alerts (SMTP Gmail App Password recommended)
+# spring.mail.username=your_email@gmail.com
+# spring.mail.password=your_gmail_app_password
+
+# Web Push VAPID configurations
+# vapid.subject=mailto:your_email@gmail.com
+
+# Optional VAPID custom keys (leave blank to auto-generate secure keypairs)
+# vapid.public.key=
+# vapid.private.key=

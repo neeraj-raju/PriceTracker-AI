@@ -36,7 +36,7 @@ public class WebPushService {
     @Value("${vapid.private.key:}")
     private String privateKey;
 
-    @Value("${vapid.subject:mailto:neeraj200430@gmail.com}")
+    @Value("${vapid.subject:mailto:placeholder-email@gmail.com}")
     private String subject;
 
     public WebPushService(WebPushSubscriptionRepository subscriptionRepository) {
