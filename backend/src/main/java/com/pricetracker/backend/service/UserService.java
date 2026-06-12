@@ -4,6 +4,7 @@ import com.pricetracker.backend.model.*;
 import com.pricetracker.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,17 @@ public class UserService {
     private final UserTrackingRepository userTrackingRepository;
     private final ComparisonGroupRepository comparisonGroupRepository;
     private final WebPushSubscriptionRepository webPushSubscriptionRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Transactional
+    public void changePassword(User user, String currentPassword, String newPassword) {
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Incorrect current password.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Successfully changed password for user ID: {}", user.getId());
+    }
 
     @Transactional
     public void deleteUserAccount(Long userId) {

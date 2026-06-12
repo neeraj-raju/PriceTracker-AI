@@ -51,4 +51,30 @@ public class EmailService {
         mailSender.send(message);
         log.info("[✉️ EMAIL SENT SECURELY VIA SMTP] Email successfully handed over to mail server.");
     }
+
+    public void sendForgotPasswordEmail(String toEmail, String tempPassword) {
+        String subject = "🔑 Temporary Password - PriceTracker AI";
+        String text = "⚡ PriceTracker AI Reset Password ⚡\n\n" +
+                      "We received a request to reset your password.\n\n" +
+                      "Your temporary password is: " + tempPassword + "\n\n" +
+                      "Please log in using this password and change your password in your settings immediately.\n\n" +
+                      "Thank you for using PriceTracker AI!";
+
+        log.info("\n============================================================\n" +
+                 "[✉️ FORGOT PASSWORD EMAIL GENERATED SUCCESSFULLY]\n" +
+                 "To: {}\n" +
+                 "Subject: {}\n" +
+                 "Body:\n{}\n" +
+                 "============================================================",
+                 toEmail, subject, text);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject(subject);
+        message.setText(text);
+
+        mailSender.send(message);
+        log.info("[✉️ EMAIL SENT SECURELY VIA SMTP] Temporary password email successfully sent.");
+    }
 }

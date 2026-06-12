@@ -20,9 +20,11 @@ Box,
 LogOut,
 History,
 GitCompare,
-Settings
+Settings,
+Eye,
+EyeOff
 } from "lucide-react";
-import { deleteUserAccount } from "../services/authService";
+import { deleteUserAccount, changePassword } from "../services/authService";
 import { motion } from "framer-motion";
 
 import {
@@ -83,6 +85,48 @@ export default function Dashboard() {
        showToast(err.response?.data?.message || err.message || "Failed to delete your account. Please try again.", "error");
      }
    };
+
+    // Change Password States & Handler
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+
+    const handleChangePasswordSubmit = async (e) => {
+      e.preventDefault();
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showToast("Please fill in all fields.", "error");
+        return;
+      }
+      if (newPassword.length < 6) {
+        showToast("New password must be at least 6 characters long.", "error");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showToast("Passwords do not match.", "error");
+        return;
+      }
+      setIsSubmittingPassword(true);
+      try {
+        const res = await changePassword({ currentPassword, newPassword });
+        if (res && res.success) {
+          showToast(res.message || "Password updated successfully! 🎉", "success");
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        } else {
+          showToast(res?.message || "Failed to change password.", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.response?.data?.message || err.message || "Failed to update password. Verify your current password.", "error");
+      } finally {
+        setIsSubmittingPassword(false);
+      }
+    };
 
 const [url,setUrl]=useState("");
 const [userName, setUserName]=useState("");
@@ -1117,6 +1161,94 @@ activeSection === "settings" && (
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-[#0c0c0c] border border-[#1c1c1c] rounded-2xl p-6">
+        <h3 className="text-lg font-bold text-zinc-200 mb-4">Change Password</h3>
+        <form onSubmit={handleChangePasswordSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Current Password */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-zinc-500 text-xs font-bold uppercase">Current Password</span>
+              <div className="relative">
+                <input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-black border border-[#222] focus:border-emerald-500/50 rounded-xl pl-4 pr-11 py-3 text-zinc-300 font-medium outline-none transition"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent(!showCurrent)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
+                >
+                  {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-zinc-500 text-xs font-bold uppercase">New Password</span>
+              <div className="relative">
+                <input
+                  type={showNew ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 6 chars"
+                  className="w-full bg-black border border-[#222] focus:border-emerald-500/50 rounded-xl pl-4 pr-11 py-3 text-zinc-300 font-medium outline-none transition"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew(!showNew)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
+                >
+                  {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-zinc-500 text-xs font-bold uppercase">Confirm New Password</span>
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-black border border-[#222] focus:border-emerald-500/50 rounded-xl pl-4 pr-11 py-3 text-zinc-300 font-medium outline-none transition"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
+                >
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <motion.button
+              type="submit"
+              disabled={isSubmittingPassword}
+              whileHover={isSubmittingPassword ? {} : { scale: 1.02, boxShadow: "0px 0px 20px rgba(16,185,129,0.2)" }}
+              whileTap={isSubmittingPassword ? {} : { scale: 0.98 }}
+              className="bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-800 disabled:text-zinc-400 text-black font-extrabold px-6 py-3 rounded-xl transition cursor-pointer text-sm"
+            >
+              {isSubmittingPassword ? "Updating... ⏳" : "Update Password"}
+            </motion.button>
+          </div>
+        </form>
       </div>
 
       {/* Account Deletion */}

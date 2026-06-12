@@ -5,7 +5,9 @@ import {
   User,
   Mail,
   Lock,
-  Phone
+  Phone,
+  Eye,
+  EyeOff
 } from "lucide-react"
 
 import { registerUser, loginUser } from "../services/authService"
@@ -16,6 +18,9 @@ function Register() {
 
   const navigate = useNavigate()
   const { showToast } = useToast()
+  
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem("token")) {
@@ -215,7 +220,7 @@ function Register() {
               </div>
             </div>
 
-             {/* PASSWORD */}
+              {/* PASSWORD */}
             <div className="mb-6">
 
               <label className="text-zinc-300 mb-2 block">
@@ -227,7 +232,7 @@ function Register() {
                 <Lock className="text-zinc-400" size={20} />
 
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Create password"
                   onChange={handleChange}
@@ -235,6 +240,14 @@ function Register() {
                   autoComplete="new-password"
                   className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-zinc-400 hover:text-white transition focus:outline-none cursor-pointer flex-shrink-0"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
 
               </div>
             </div>
@@ -251,7 +264,7 @@ function Register() {
                 <Lock className="text-zinc-400" size={20} />
 
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   placeholder="Confirm password"
                   onChange={handleChange}
@@ -259,6 +272,14 @@ function Register() {
                   autoComplete="new-password"
                   className="w-full bg-transparent outline-none px-4 py-4 text-white"
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="text-zinc-400 hover:text-white transition focus:outline-none cursor-pointer flex-shrink-0"
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
 
               </div>
             </div>

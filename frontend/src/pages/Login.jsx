@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom"
-import { Mail, Lock } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react"
 
-import { loginUser } from "../services/authService"
+import { loginUser, forgotPassword } from "../services/authService"
 import { useToast } from "../context/ToastContext"
 import { trackProduct } from "../services/productService"
 
@@ -11,6 +11,11 @@ function Login() {
 
   const navigate = useNavigate()
   const { showToast } = useToast()
+  
+  const [showPassword, setShowPassword] = useState(false)
+  const [isForgotMode, setIsForgotMode] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [isSubmittingForgot, setIsSubmittingForgot] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem("token")) {
@@ -72,6 +77,30 @@ function Login() {
     }
   }
 
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      showToast("Please enter your email address.", "error");
+      return;
+    }
+    setIsSubmittingForgot(true);
+    try {
+      const res = await forgotPassword(forgotEmail);
+      if (res && res.success) {
+        showToast(res.message || "If the email is registered, a temporary password has been sent.", "success");
+        setIsForgotMode(false);
+        setForgotEmail("");
+      } else {
+        showToast(res?.message || "Failed to process password reset request.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to connect to authentication service.", "error");
+    } finally {
+      setIsSubmittingForgot(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white flex overflow-hidden">
 
@@ -108,114 +137,168 @@ function Login() {
 
         <div className="absolute w-[350px] h-[350px] bg-cyan-500/10 blur-[120px] rounded-full right-0 top-0" />
 
-        <motion.form
-          onSubmit={handleLogin}
-          autoComplete="off"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="w-full max-w-md relative z-10"
-        >
-
-          <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl p-10 shadow-2xl">
-
-            <h2 className="text-4xl font-black mb-3">
-              Login
-            </h2>
-
-            <p className="text-zinc-400 mb-10">
-              Access your dashboard and tracked products.
-            </p>
-
-            {/* EMAIL */}
-            <div className="mb-6">
-
-              <label className="text-zinc-300 mb-2 block">
-                Email
-              </label>
-
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
-
-                <Mail className="text-zinc-400" size={20} />
-
-               <input
-               type="email"
-               name="email"
-               placeholder="Enter your email"
-               onChange={handleChange}
-               autoComplete="off"
-               value={formData.email}
-               className="w-full bg-transparent outline-none px-4 py-4 text-white"
-               />
-              </div>
-            </div>
-
-            {/* PASSWORD */}
-            <div className="mb-8">
-
-              <label className="text-zinc-300 mb-2 block">
-                Password
-              </label>
-
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
-
-                <Lock className="text-zinc-400" size={20} />
-
-                <input
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                onChange={handleChange}
-                autoComplete="new-password"
-                value={formData.password}
-                className="w-full bg-transparent outline-none px-4 py-4 text-white"
-                />
-
-              </div>
-            </div>
-
-            {/* REMEMBER ME & FORGOT PASSWORD */}
-            <div className="flex items-center justify-between mb-8 text-sm text-zinc-400">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" className="rounded border-white/10 bg-white/5 text-emerald-500 focus:ring-0 focus:ring-offset-0" />
-                <span>Remember me</span>
-              </label>
-              <a href="#" onClick={(e) => { e.preventDefault(); showToast("Password reset link has been simulated. Under construction 🛠️", "info"); }} className="hover:text-emerald-400 transition">
-                Forgot password?
-              </a>
-            </div>
-
-            {/* BUTTON */}
-            <motion.button
-              type="submit"
-              whileHover={{
-                scale: 1.02,
-                boxShadow:
-                  "0px 0px 25px rgba(16,185,129,0.5)"
-              }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-4 rounded-2xl text-lg transition"
-            >
-              Login
-            </motion.button>
-
-            {/* REGISTER */}
-            <p className="text-zinc-400 text-center mt-8">
-
-              Don’t have an account?{" "}
-
-              <Link
-                to="/register"
-                className="text-emerald-400 hover:text-emerald-300"
+        {isForgotMode ? (
+          <motion.form
+            onSubmit={handleForgotSubmit}
+            autoComplete="off"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="w-full max-w-md relative z-10"
+          >
+            <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl p-10 shadow-2xl">
+              <button
+                type="button"
+                onClick={() => setIsForgotMode(false)}
+                className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition text-sm mb-6 cursor-pointer bg-transparent border-none focus:outline-none"
               >
-                Register
-              </Link>
+                <ArrowLeft size={16} />
+                <span>Back to Login</span>
+              </button>
 
-            </p>
+              <h2 className="text-4xl font-black mb-3">
+                Reset Password
+              </h2>
 
-          </div>
+              <p className="text-zinc-400 mb-10">
+                Enter your email address and we will send you a temporary password.
+              </p>
 
-        </motion.form>
+              {/* EMAIL */}
+              <div className="mb-8">
+                <label className="text-zinc-300 mb-2 block">
+                  Email
+                </label>
+                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
+                  <Mail className="text-zinc-400" size={20} />
+                  <input
+                    type="email"
+                    name="forgotEmail"
+                    placeholder="Enter your email"
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    autoComplete="off"
+                    value={forgotEmail}
+                    className="w-full bg-transparent outline-none px-4 py-4 text-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* BUTTON */}
+              <motion.button
+                type="submit"
+                disabled={isSubmittingForgot}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0px 0px 25px rgba(16,185,129,0.5)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-4 rounded-2xl text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmittingForgot ? "Sending..." : "Send Password"}
+              </motion.button>
+            </div>
+          </motion.form>
+        ) : (
+          <motion.form
+            onSubmit={handleLogin}
+            autoComplete="off"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="w-full max-w-md relative z-10"
+          >
+            <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl p-10 shadow-2xl">
+              <h2 className="text-4xl font-black mb-3">
+                Login
+              </h2>
+
+              <p className="text-zinc-400 mb-10">
+                Access your dashboard and tracked products.
+              </p>
+
+              {/* EMAIL */}
+              <div className="mb-6">
+                <label className="text-zinc-300 mb-2 block">
+                  Email
+                </label>
+                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
+                  <Mail className="text-zinc-400" size={20} />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    onChange={handleChange}
+                    autoComplete="off"
+                    value={formData.email}
+                    className="w-full bg-transparent outline-none px-4 py-4 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* PASSWORD */}
+              <div className="mb-8">
+                <label className="text-zinc-300 mb-2 block">
+                  Password
+                </label>
+                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4">
+                  <Lock className="text-zinc-400" size={20} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Enter your password"
+                    onChange={handleChange}
+                    autoComplete="new-password"
+                    value={formData.password}
+                    className="w-full bg-transparent outline-none px-4 py-4 text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-zinc-400 hover:text-white transition focus:outline-none cursor-pointer flex-shrink-0"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* REMEMBER ME & FORGOT PASSWORD */}
+              <div className="flex items-center justify-between mb-8 text-sm text-zinc-400">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" className="rounded border-white/10 bg-white/5 text-emerald-500 focus:ring-0 focus:ring-offset-0" />
+                  <span>Remember me</span>
+                </label>
+                <a href="#" onClick={(e) => { e.preventDefault(); setIsForgotMode(true); }} className="hover:text-emerald-400 transition">
+                  Forgot password?
+                </a>
+              </div>
+
+              {/* BUTTON */}
+              <motion.button
+                type="submit"
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0px 0px 25px rgba(16,185,129,0.5)"
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-4 rounded-2xl text-lg transition"
+              >
+                Login
+              </motion.button>
+
+              {/* REGISTER */}
+              <p className="text-zinc-400 text-center mt-8">
+                Don’t have an account?{" "}
+                <Link
+                  to="/register"
+                  className="text-emerald-400 hover:text-emerald-300"
+                >
+                  Register
+                </Link>
+              </p>
+            </div>
+          </motion.form>
+        )}
 
       </div>
 

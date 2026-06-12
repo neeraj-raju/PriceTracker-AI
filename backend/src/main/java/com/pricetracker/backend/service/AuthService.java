@@ -24,6 +24,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -69,5 +70,28 @@ public class AuthService {
                 .email(user.getEmail())
                 .message("Login successful!")
                 .build();
+    }
+
+    public void forgotPassword(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
+        
+        java.util.Optional<User> userOpt = userRepository.findByEmail(email.trim());
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String tempPassword = java.util.UUID.randomUUID().toString().substring(0, 8);
+            user.setPassword(passwordEncoder.encode(tempPassword));
+            userRepository.save(user);
+            
+            try {
+                emailService.sendForgotPasswordEmail(user.getEmail(), tempPassword);
+            } catch (Exception e) {
+                log.error("Failed to send temporary password email to {}: {}", user.getEmail(), e.getMessage());
+                throw new RuntimeException("Failed to send password reset email. Please try again later.");
+            }
+        } else {
+            log.warn("Forgot password request for unregistered email: {}", email);
+        }
     }
 }

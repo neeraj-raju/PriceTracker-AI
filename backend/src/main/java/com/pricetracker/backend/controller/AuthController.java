@@ -37,6 +37,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful!", response));
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @RequestBody java.util.Map<String, String> request) {
+        String email = request.get("email");
+        log.info("Forgot password request for email: {}", email);
+        authService.forgotPassword(email);
+        return ResponseEntity.ok(ApiResponse.success("If the email is registered, a temporary password has been sent.", null));
+    }
+
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<String>> health() {
         return ResponseEntity.ok(ApiResponse.success("Auth service running", "OK"));
