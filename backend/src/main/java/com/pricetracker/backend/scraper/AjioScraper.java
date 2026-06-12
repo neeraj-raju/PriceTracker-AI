@@ -26,6 +26,13 @@ public class AjioScraper implements ScraperStrategy {
 
     @Override
     public Map<String, Object> scrape(String url) {
+        // Try Python scraper first as it is TLS-hardened and bypasses Akamai anti-bot blocking
+        Map<String, Object> pyData = scrapeWithPython(url);
+        if (pyData != null && pyData.get("name") != null && !"0".equals(pyData.get("price").toString())) {
+            log.info("Successfully scraped Ajio via Python: {}", pyData);
+            return pyData;
+        }
+
         Map<String, Object> data = new HashMap<>();
 
         try {
@@ -95,6 +102,62 @@ public class AjioScraper implements ScraperStrategy {
         }
 
         return data;
+    }
+
+    private Map<String, Object> scrapeWithPython(String url) {
+        try {
+            log.info("Attempting python scraper for URL: {}", url);
+            
+            // Extract ajio_scraper.py from resources to a temp file
+            java.io.File tempScript = java.io.File.createTempFile("ajio_scraper", ".py");
+            tempScript.deleteOnExit();
+            try (java.io.InputStream is = getClass().getResourceAsStream("/ajio_scraper.py");
+                 java.io.FileOutputStream os = new java.io.FileOutputStream(tempScript)) {
+                if (is == null) {
+                    throw new java.io.FileNotFoundException("ajio_scraper.py not found on classpath");
+                }
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, bytesRead);
+                }
+            }
+
+            ProcessBuilder pb = new ProcessBuilder(
+                "python",
+                tempScript.getAbsolutePath(),
+                url
+            );
+            
+            Process process = pb.start();
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            try (java.io.InputStream inputStream = process.getInputStream()) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+            }
+            
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                String jsonStr = outputStream.toString("UTF-8").trim();
+                log.info("Python scraper output: {}", jsonStr);
+                
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                Map<String, Object> result = mapper.readValue(jsonStr, mapper.getTypeFactory().constructMapType(HashMap.class, String.class, Object.class));
+                if (result.containsKey("error")) {
+                    log.warn("Python scraper returned error: {}", result.get("error"));
+                    return null;
+                }
+                return result;
+            } else {
+                log.warn("Python scraper exited with code: {}", exitCode);
+            }
+        } catch (Exception e) {
+            log.error("Failed to execute python scraper: {}", e.getMessage(), e);
+        }
+        return null;
     }
 
     private String extractPrice(Document doc) {
