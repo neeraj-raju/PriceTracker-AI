@@ -18,10 +18,13 @@ function Login() {
   const [isSubmittingForgot, setIsSubmittingForgot] = useState(false)
 
   useEffect(() => {
-    if (localStorage.getItem("token")) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("session") === "expired") {
+      showToast("Your session has expired. Please log in to continue.", "info");
+    } else if (localStorage.getItem("token")) {
       navigate("/dashboard", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, showToast]);
 
   const [formData, setFormData] = useState({
     email: "",

@@ -6,6 +6,8 @@ import Register from "../pages/Register"
 import Dashboard from "../pages/Dashboard"
 import ComparisonPage from "../pages/ComparisonPage"
 
+import ProtectedRoute from "../components/ProtectedRoute"
+
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -18,9 +20,23 @@ function AppRoutes() {
 
         <Route path="/register" element={<Register />} />
 
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/compare" element={<ComparisonPage />} />
+        <Route
+          path="/compare"
+          element={
+            <ProtectedRoute>
+              <ComparisonPage />
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
 

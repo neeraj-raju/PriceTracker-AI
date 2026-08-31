@@ -36,68 +36,56 @@ public class AmazonScraper implements ScraperStrategy {
         Map<String, Object> data = new HashMap<>();
 
         try {
+            log.info("Scraping Amazon URL: {}", url);
 
-            System.out.println("Scraping URL: " + url);
+            Document doc = fetchWithCurlFallback(url);
 
-            Document doc = Jsoup.connect(url)
-                    .userAgent(userAgent)
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Connection", "keep-alive")
-                    .header("Upgrade-Insecure-Requests", "1")
-                    .timeout(timeout)
-                    .get();
+            Element titleEl = doc.selectFirst("#productTitle");
+            if (titleEl == null) titleEl = doc.selectFirst("#title");
+            if (titleEl == null) titleEl = doc.selectFirst("h1.a-size-large");
+            if (titleEl == null) titleEl = doc.selectFirst("meta[name=title]");
+            if (titleEl == null) titleEl = doc.selectFirst("meta[property=\"og:title\"]");
 
-            Element titleEl =
-                    doc.selectFirst("#productTitle");
-
-            String productName =
-                    titleEl != null
-                            ? titleEl.text().trim()
-                            : "Unknown Product";
+            String productName = "Unknown Product";
+            if (titleEl != null) {
+                if (titleEl.hasAttr("content")) {
+                    productName = titleEl.attr("content").trim();
+                } else {
+                    productName = titleEl.text().trim();
+                }
+            }
 
             data.put("name", productName);
 
-            String price =
-                    extractPrice(doc);
-
+            String price = extractPrice(doc);
             data.put("price", price);
 
-            Element imgEl =
-                    doc.selectFirst("#landingImage");
+            Element imgEl = doc.selectFirst("#landingImage");
+            if (imgEl == null) imgEl = doc.selectFirst("#imgBlkFront");
+            if (imgEl == null) imgEl = doc.selectFirst("#main-image");
+            if (imgEl == null) imgEl = doc.selectFirst("meta[property=\"og:image\"]");
 
-            data.put(
-                    "imageUrl",
-                    imgEl != null
-                            ? imgEl.attr("src")
-                            : ""
-            );
+            String imageUrl = "";
+            if (imgEl != null) {
+                if (imgEl.hasAttr("src")) {
+                    imageUrl = imgEl.attr("src");
+                } else if (imgEl.hasAttr("content")) {
+                    imageUrl = imgEl.attr("content");
+                } else if (imgEl.hasAttr("data-old-hires")) {
+                    imageUrl = imgEl.attr("data-old-hires");
+                }
+            }
+            data.put("imageUrl", imageUrl);
 
-            Element ratingEl =
-                    doc.selectFirst("span.a-icon-alt");
+            Element ratingEl = doc.selectFirst("span.a-icon-alt");
+            data.put("rating", ratingEl != null ? ratingEl.text() : "N/A");
 
-            data.put(
-                    "rating",
-                    ratingEl != null
-                            ? ratingEl.text()
-                            : "N/A"
-            );
-
-            Element availEl =
-                    doc.selectFirst("#availability span");
-
-            data.put(
-                    "availability",
-                    availEl != null
-                            ? availEl.text().trim()
-                            : "Unknown"
-            );
+            Element availEl = doc.selectFirst("#availability span");
+            data.put("availability", availEl != null ? availEl.text().trim() : "In Stock");
 
             data.put("website", "AMAZON");
 
-            System.out.println(
-                    "SCRAPED DATA: " + data
-            );
+            log.info("SCRAPED DATA: {}", data);
 
         }
         catch (Exception e) {
@@ -112,6 +100,56 @@ public class AmazonScraper implements ScraperStrategy {
         }
 
         return data;
+    }
+
+    private Document fetchWithCurlFallback(String url) throws Exception {
+        try {
+            return Jsoup.connect(url)
+                    .userAgent(userAgent)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Connection", "keep-alive")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .followRedirects(true)
+                    .timeout(timeout)
+                    .get();
+        } catch (org.jsoup.HttpStatusException ex) {
+            if (ex.getStatusCode() == 403 || ex.getStatusCode() == 503 || ex.getStatusCode() == 404) {
+                log.info("Received HTTP {} from Jsoup. Attempting curl fallback for URL: {}", ex.getStatusCode(), url);
+                try {
+                    ProcessBuilder pb = new ProcessBuilder(
+                        "curl.exe",
+                        "-s",
+                        "-L",
+                        "-A", userAgent,
+                        "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                        "-H", "Accept-Language: en-US,en;q=0.9",
+                        url
+                    );
+                    Process process = pb.start();
+                    java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+                    try (java.io.InputStream inputStream = process.getInputStream()) {
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = inputStream.read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, bytesRead);
+                        }
+                    }
+                    int exitCode = process.waitFor();
+                    if (exitCode == 0) {
+                        String html = outputStream.toString("UTF-8");
+                        if (html != null && !html.trim().isEmpty()) {
+                            return Jsoup.parse(html, url);
+                        }
+                    } else {
+                        log.warn("Curl fallback failed with exit code: {}", exitCode);
+                    }
+                } catch (Exception curlEx) {
+                    log.error("Failed to execute curl fallback: {}", curlEx.getMessage(), curlEx);
+                }
+            }
+            throw ex;
+        }
     }
 
     private boolean isAvoidablePrice(Element el) {

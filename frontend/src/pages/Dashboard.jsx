@@ -409,6 +409,12 @@ search
 );
 const handleTrack = async () => {
 
+    if (!localStorage.getItem("token")) {
+        showToast("Please log in to track products", "error");
+        navigate("/login", { replace: true });
+        return;
+    }
+
     if (!url.trim()) {
 
         showToast("Please enter a valid product URL", "error");
@@ -441,17 +447,13 @@ const handleTrack = async () => {
    error
    )
 
-   console.log(
-   "RESPONSE:",
-   error.response
-   )
+   const errorMsg = error.response?.data?.message 
+       || (error.response?.status === 401 || error.response?.status === 403 
+           ? "Session expired or authentication failed. Please log in again." 
+           : error.message) 
+       || "Failed to track product";
 
-   console.log(
-   "DATA:",
-   error.response?.data
-   )
-
-   showToast(error.response?.data?.message || error.message || "Failed to track product", "error");
+   showToast(errorMsg, "error");
 
    }
 

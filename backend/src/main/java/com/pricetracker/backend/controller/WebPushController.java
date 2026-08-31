@@ -14,7 +14,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class WebPushController {
 
     private final WebPushSubscriptionRepository subscriptionRepository;

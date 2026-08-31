@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comparison/groups")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ComparisonController {
 
     private final ComparisonGroupService comparisonGroupService;

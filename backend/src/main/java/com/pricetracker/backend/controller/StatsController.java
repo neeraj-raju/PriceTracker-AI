@@ -18,7 +18,6 @@ import java.util.List;
 @RequestMapping("/api/stats")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class StatsController {
 
     private final StatsService statsService;
